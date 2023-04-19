@@ -1,5 +1,5 @@
 
-const ExcelJS = require('ExcelJS');
+const ExcelJS = require('excelj');
 const request = require('request');
 const fs = require('fs');
 //const { count } = require('console');

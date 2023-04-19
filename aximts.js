@@ -11,7 +11,7 @@ var today = new Date();
 
  // получаем дату и время
 var now = today.toLocaleDateString('uk-UA');
-var sheetname = now + '  Прайс MTS clinic';
+var sheetname = now + '  Прайс MTS clinic ';
 const workbook = new ExcelJS.Workbook();
 
 const worksheet = workbook.addWorksheet(now + '  Прайс MTS Clinic');
