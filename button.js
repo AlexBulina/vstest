@@ -16,7 +16,7 @@ bot.onText(/(\d{2})\/(\d{2})\/(\d{4})/, (msg) => {
   databurn = msg.text;
   actualid = msg.chat.id;
   bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${databurn}`)
-  bot.sendMessage(msg.chat.id, `Тепер попрошу Вас  надати дозвіл на отримання Вашого мобільного номера. Натисніть кнопку , що з'явилася під полем вводу.`,{
+  bot.sendMessage(msg.chat.id, `Тепер попрошу Вас надати дозвіл на отримання Вашого мобільного номера. Натисніть кнопку , що з'явилася під полем вводу.`,{
     reply_markup: {
         keyboard: [
             [

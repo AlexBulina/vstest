@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "exceljs": "^4.3.0",
+    "fs": "^0.0.1-security",
+    "node-telegram-bot-api": "^0.61.0",
+    "request": "^2.88.2",
+    "xlsx": "^0.18.5"
+  },
+  "name": "telegram",
+  "version": "1.0.0",
+  "main": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexBulina/vstest.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlexBulina/vstest/issues"
+  },
+  "homepage": "https://github.com/AlexBulina/vstest#readme",
+  "description": ""
+}
