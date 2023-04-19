@@ -16,18 +16,22 @@ Promise.all(url.map(url => fetch(url,{
   .then(data => {
     // обробка даних
     //console.log(data[0][0].groups);
+   
+     
+
     data[0][0].groups.forEach((item)=>{
+      
         console.log(item.name);
          data[1].forEach((item2)=>{
         if (item.id == item2.groupId){console.log(item2.name);}
     
 
 
-     });
+     });});
     
     
     
-    });
+  
   })
   .catch(error => console.log(error));
 
