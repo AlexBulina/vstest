@@ -16,7 +16,18 @@ Promise.all(url.map(url => fetch(url,{
   .then(data => {
     // обробка даних
     //console.log(data[0][0].groups);
-    data[0][0].groups.forEach((item)=>{console.log(item.name);});
+    data[0][0].groups.forEach((item)=>{
+        console.log(item.name);
+         data[1].forEach((item2)=>{
+        if (item.id == item2.groupId){console.log(item2.name);}
+    
+
+
+     });
+    
+    
+    
+    });
   })
   .catch(error => console.log(error));
 
@@ -24,11 +35,3 @@ Promise.all(url.map(url => fetch(url,{
 
 
 
-// Promise.all(url.map((url)=>{fetch(url,{
-// headers: {
-// 'Authorization': 'Basic TWVkVGVjaHxNZWRUZWNoV2ViOk1lZFRlY2gxMjMh'
-// }
-// });}))
-// .then((response)=>{response.json();
-// console.log(response[0]);}
-// );
