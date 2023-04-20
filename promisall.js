@@ -80,7 +80,7 @@ Promise.all(url.map(url => fetch(url,{
      
 
     data[0][0].groups.forEach((item)=>{
-      
+    
        // console.log(item.name);
          data[1].forEach((item2)=>{
         if (item.id == item2.groupId){
