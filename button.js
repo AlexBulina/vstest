@@ -2,7 +2,7 @@ const TelegramBot = require('node-telegram-bot-api');
 
 const url =  'http://127.0.0.1:9998/KDG_SIMPLE_LAB_API/Milamed';
 const photo = 'https://milamed.com.ua/wp-content/uploads/2022/12/img_5791-scaled.jpg';
-const token = '6283627408:AAHY4rNcLCxoNz9qqOyIjgRMsQTyLjGA1Xk';
+const token = '510200054:AAEEZ21fwwx8GPA06ATSw5fzzddqT1rYdiA';
 const bot = new TelegramBot(token, { polling: true });
 let databurn;
 let phone;
@@ -175,7 +175,7 @@ bot.on('message', (msg) => {
           [{ text: '3. Як нас знайти', callback_data: 'button3' }],
           [{ text: '4. Графік роботи лабораторії', callback_data: 'button4' }],
           [{ text: '5. Актуальний прайс-лист лабораторії Міламед', callback_data: 'button5' }],
-          [{ text: '6. Прайс-лист медичного центру Міламед', callback_data: 'button6' }],
+          [{ text: '6. Прайс-листи медичного центру Міламед', callback_data: 'button6' }],
           [{text: 'Перейти на офіційний сайт',url: 'http://milamed.com.ua'}]
         ],
       
@@ -256,8 +256,22 @@ bot.on('callback_query', (query) => {
             
       break;
       case 'button6':
-        bot.sendDocument(chatId,`C:\\Telegram\\Priceclinicmilamed.xlsx`,{caption: 'Актуальний прайс медичного центру Міламед'
-  
+        bot.sendDocument(chatId,`C:\\JAVA\\Telegram\\actualclinicprice.pdf`,{caption: 'Актуальний прайс медичного центру Міламед'
+           
+      }).then (()=>{
+        
+        bot.sendDocument(chatId,`C:\\JAVA\\Telegram\\actualpriceUSDiagnos.pdf`,{caption: 'Прейскурант цін медичних послуг ультразвукової діагностики'
+           
+      });
+
+
+      }).then (()=>{
+        
+        bot.sendDocument(chatId,`C:\\JAVA\\Telegram\\actualpriceendoscope.pdf`,{caption: 'Прейскурант цін медичних послуг ендоскопічних досліджень'
+           
+      });
+
+
       });
 
       break;
