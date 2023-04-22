@@ -161,12 +161,29 @@ console.log(outputdate);
 
 
 });  
+
+
+// function getMessages(chatId) {
+//   bot.getUpdates({ offset: -1, limit: 100 }).then((updates) => {
+//     updates.forEach((update) => {
+//       if (update.message.chat.id === chatId) {
+//         console.log(update.message.message_id);
+//         bot.deleteMessage(chatId, update.message.message_id);
+//       }
+//     });
+//   });
+// }
+
+
+
+
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
   const textid = msg.text;
 
   if (msg.text === '/start') {
-   
+   //1 getMessages(chatId);
+    //bot.deleteMessage(chatId, msg.message_id);
     bot.sendMessage(chatId, 'Виберіть дію:', {
       reply_markup: {  
         inline_keyboard: [
@@ -231,7 +248,23 @@ bot.on('callback_query', (query) => {
 
       break;
     case 'button3':
-        bot.sendLocation(chatId,49.42566, 26.98299,{reply_markup:{remove_keyboard:true}});
+        bot.sendMessage(chatId,'Адреса медичного центру Міламед. м.Хмельницький, вул.Проскурівська 13').then(()=>{
+          bot.sendLocation(chatId,49.42566, 26.98299,{reply_markup:{remove_keyboard:true}})
+          .then(()=>{
+            bot.sendMessage(chatId,'Адреса медичної лабораторії Міламед. м.Хмельницький, вул.Соборна 29')
+            .then((data)=>{
+
+              bot.sendLocation(chatId,49.42481, 26.98165,{reply_markup:{remove_keyboard:true}});
+
+            });
+
+
+
+
+          });
+        });
+          
+        
 
       break;
     case 'button4':

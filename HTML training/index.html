@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<input type="text" id="myInput">
+<button onclick="get_tocken()">Изменить содержимое страницы</button>
+
+<script>
+function changeContent() {
+  var inputValue = document.getElementById("myInput").value;
+  document.getElementById("content").innerHTML = "Вы ввели: " + get_tocken();
+}
+</script>
+<script src="C:\\JAVA\\Telegram\\get file ondrive.js"></script>
+
+<p id="content">Нажмите кнопку, чтобы изменить содержимое страницы.</p>
+
+</body>
+</html>

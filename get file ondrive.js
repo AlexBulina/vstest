@@ -22,6 +22,7 @@ async function get_token() {
     const data = await response.json();
     const token1 = data.access_token;
     token = token1;
+    return token1;
   } else {
     console.error('Помилка:', response.statusText);
   }
