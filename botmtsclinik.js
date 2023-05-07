@@ -1,9 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 const photo = 'https://milamed.com.ua/wp-content/uploads/2022/12/img_5791-scaled.jpg';
-const token = '510200054:AAEEZ21fwwx8GPA06ATSw5fzzddqT1rYdiA';
+const token = '5949157258:AAENmhmwtyhoYjieQCWcZIAP3WYY6cn4_b4';
 const bot = new TelegramBot(token, { polling: true });
 const url = 'http://195.211.240.20:11998/KDG_SIMPLE_LAB_API/MedTech';
-//const url =  'http://milamed.org.ua:9998/KDG_SIMPLE_LAB_API/Milamed6';
+//const url =  'http://milamed.org.ua:9998/KDG_SIMPLE_LAB_API/Milamed';
 let databurn,ama;
 let phone;
 let list;
@@ -11,7 +11,7 @@ let today = new Date();
 let curyear = today.getFullYear(); 
 let outputdate ;
 let actualid;
-console.log('Телеграм бот Міламед - запущено');
+console.log('Телеграм бот MTS clinic - запущено');
 bot.onText(/(\d{2})\/(\d{2})\/(\d{4})/, (msg) => {
   databurn = msg.text;
   actualid = msg.chat.id;
@@ -86,11 +86,11 @@ headers: {
 //'Authorization': 'Basic TWlsYW1lZHx3ZWI6ZmRiNEshSTN5WQ=='
 }
 })
-.catch(error => {bot.sendMessage(msg,'Виникла помилка завантаження даних. Спробуйте пізніше.');})
+.catch(error => {bot.sendMessage(msg,'Виникла помилка завантаження даних2. Спробуйте пізніше.');})
 .then(res => res.arrayBuffer())
 .then(buffer => {
 const fileBufferpdf = Buffer.from(buffer);
-
+//  console.log(fileBufferpdf);
 
 bot.sendDocument(msg,fileBufferpdf,{},{filename: `${data[i].WebCode}.pdf`,contentType: 'application/pdf'})
 bot.sendMessage(msg,'Запис  ' + `${(i+1)}` + '       Дата звернення: ' + `${data[i].Date}`)
@@ -139,6 +139,15 @@ console.log(outputdate);
  console.log(phone);
 
 
+
+
+
+
+
+
+
+
+
 });  
 bot.on('message', (msg) => {
   const chatId = msg.chat.id;
@@ -155,8 +164,7 @@ bot.on('message', (msg) => {
           [{ text: '4. Новини та акції', url: 'https://www.mtsclinic.com/drygieyslygi' }],
           [{ text: '5. Актуальний прайс-лист лабораторії Mtsclinic', callback_data: 'button5' }],
           [{ text: '6. Прайс-лист медичного центру Mtsclinic', callback_data: 'button6' }],
-          [{text: 'Перейти на офіційний сайт',url: 'https://www.mtsclinic.com/'}],
-          [{ text: 'Запустити моніторинг', callback_data: 'deamon' }]
+          [{text: 'Перейти на офіційний сайт',url: 'https://www.mtsclinic.com/'}]
          
         ],
       
@@ -207,7 +215,7 @@ bot.on('callback_query', (query) => {
       break;
     case 'button2':
      
-      bot.sendMessage(chatId, 'Введіть свою дату народження в форматі ДД/ММ/РРРР - для унікальної ідентифікації вас в базі данних лабораторії Міламед', {reply_markup:{remove_keyboard:true}});
+      bot.sendMessage(chatId, 'Введіть свою дату народження в форматі ДД/ММ/РРРР - для унікальної ідентифікації вас в базі данних лабораторії MTS Clinic', {reply_markup:{remove_keyboard:true}});
      
         
 
@@ -220,12 +228,12 @@ bot.on('callback_query', (query) => {
         bot.sendMessage(chatId,`<b><u>Аеропорт.</u></b>` +' тел.:(0932962509)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Проспект Гагарина, 316Б\nПн-Пт с 07:30-12:00, Нд (вихідний)',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"}); 
         bot.sendMessage(chatId,`<b><u>Південний вокзал.</u></b>` +' тел.:(0932962504)(Viber,Telegram)\nАдреса: Котляра, 12\nПн-Сб с 07:30-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"}); 
         bot.sendMessage(chatId,`<b><u>Рогань. </u></b>` +'тел.:(0932962505)(Viber)\nАдреса: Сергія Грицевця, 9\nПн-Сб с 07:30-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"}); 
-        bot.sendMessage(chatId,'Холодна Гора. тел.:(0932962502)(Viber)\nАдреса: Полтавський шлях, 152 (Дитяча поліклініка №19 кабінет №8)\nПн-Сб с 08:00-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"}); 
-        bot.sendMessage(chatId,'Люботин. тел.:(0932962508)(Viber)\nАдреса: Шевченка, 15 (каб. 2) (Міська поліклініка)\nПн-Сб с 08:00-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
-        bot.sendMessage(chatId,'Холодна Гора. тел.:(0637078733)(Viber)\nАдреса: Дудинської, 1а\nПн-Сб с 07:30-12:00, Нд (вихідний)​​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
-        bot.sendMessage(chatId,'Комунальний ринок. тел.:(0932962513)(Viber)\nАдреса: Льва Ландау, 8\n(працює за індивідуальним графіком)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
-        bot.sendMessage(chatId,'ХТЗ. тел.:(932962510)(Viber)\nАдреса: пр-т. Олександрівський, 124\nПн-Сб с 07:30-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
-        bot.sendMessage(chatId,'Салтівка. тел.:(0932962506)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Тракторобудівників, 160В\nПн-Сб с 07:30-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
+        bot.sendMessage(chatId,`<b><u>Холодна Гора. </u></b>` +'тел.:(0932962502)(Viber)\nАдреса: Полтавський шлях, 152 (Дитяча поліклініка №19 кабінет №8)\nПн-Сб с 08:00-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"}); 
+        bot.sendMessage(chatId,`<b><u>Люботин. </u></b>` +'тел.:(0932962508)(Viber)\nАдреса: Шевченка, 15 (каб. 2) (Міська поліклініка)\nПн-Сб с 08:00-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
+        bot.sendMessage(chatId,`<b><u>Холодна Гора. </u></b>` +' тел.:(0637078733)(Viber)\nАдреса: Дудинської, 1а\nПн-Сб с 07:30-12:00, Нд (вихідний)​​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
+        bot.sendMessage(chatId,`<b><u>Комунальний ринок. </u></b>` +'тел.:(0932962513)(Viber)\nАдреса: Льва Ландау, 8\n(працює за індивідуальним графіком)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
+        bot.sendMessage(chatId,`<b><u>ХТЗ. </u></b>` +' тел.:(932962510)(Viber)\nАдреса: пр-т. Олександрівський, 124\nПн-Сб с 07:30-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
+        bot.sendMessage(chatId,`<b><u>Салтівка. </u></b>` +'тел.:(0932962506)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Тракторобудівників, 160В\nПн-Сб с 07:30-12:00, Нд (вихідний)​',{reply_markup:{remove_keyboard:true},parse_mode: "HTML"});
 
 
         break;
@@ -242,16 +250,20 @@ bot.on('callback_query', (query) => {
 
       bot.sendMessage(chatId,'Завантажую актуальний прайс',{reply_markup:{remove_keyboard:true}});
      
+	 bot.sendDocument(chatId,`C:\\Milamed request analyze\\actualpricemts.xlsx`,{caption: 'Актуальний прайс лабораторії Mtsclinic'
+  
+      });
+	 
           
-        fetch('https://www.mtsclinic.com/_files/ugd/fd4680_84efb0554e9f4d9590db25061ce954a6.pdf')
-      .then(res => res.arrayBuffer())
-      .then(buffer => {
-         const fileBuffer = Buffer.from(buffer);
-        console.log(fileBuffer);
+        //fetch('https://www.mtsclinic.com/_files/ugd/fd4680_84efb0554e9f4d9590db25061ce954a6.pdf')
+      //.then(res => res.arrayBuffer())
+      //.then(buffer => {
+      //   const fileBuffer = Buffer.from(buffer);
+       // console.log(fileBuffer);
        
-        bot.sendDocument(chatId,fileBuffer,{caption: 'Актуальний прайс лабораторії Mtsclinic'
+        //bot.sendDocument(chatId,fileBuffer,{caption: 'Актуальний прайс лабораторії Mtsclinic'
 
-          },{filename: 'Price.pdf',contentType: 'application/pdf'});});
+        //  },{filename: 'Price.pdf',contentType: 'application/pdf'});});
 
             
       break;
@@ -268,9 +280,9 @@ bot.on('callback_query', (query) => {
 
       break;
       case 'button8':
-        //bot.sendDocument(chatId,`C:\\JAVA\\Telegram\\Priceclinicmilamed.xlsx`,{caption: 'Актуальний прайс медичного центру Міламед'
-
-    
+        bot.sendDocument(chatId,`C:\\Telegram\\Priceclinicmilamed.xlsx`,{caption: 'Актуальний прайс лабораторії Mtsclinic'
+  
+      });
 
       break;
       case 'button9':
@@ -307,44 +319,6 @@ bot.on('callback_query', (query) => {
      case 'button20':
        
     default:
-      case 'deamon':
-      
-  
-      setInterval(() => {
-        
-      bot.sendMessage(actualid,'Test');
-       bot.sendMessage(actualid, `Починаю пошук інформації. Результат виконання запиту - це окремі файли pdf формату. Час виконання може бути значним. Зачекайте повного виконання запиту.`)
-
- fetch(`${url}/custom/GetPatientExams?BurnDate=1982-08-06&PhoneNumber=0506158601&BegDate=2010-01-01&EndDate=2023-12-31`,{
-  headers: {
-    'Authorization': 'Basic TWVkVGVjaHxNZWRUZWNoV2ViOk1lZFRlY2gxMjMh'
-  //'Authorization': 'Basic TWlsYW1lZHx3ZWI6ZmRiNEshSTN5WQ=='
-  }
-  })
-    //.catch(error => {bot.sendMessage(msg,'Виникла помилка завантаження даних. Спробуйте пізніше.');})
-  .then(response => { 
-    if (response.ok){response.json()
-  .then(data => {
-   
-    const nameArray = data.length;
-    if (nameArray == 0){ bot.sendMessage(actualid, `Результат виконання запиту - не знайдено замовлень по Вашим даним. Можливі причини цього читайте в головному розділі в пункті Допомога.`);}
-    else {bot.sendMessage(actualid, `Результат виконання запиту - знайдено ${nameArray} замовлень  рік по Вашим даним`,{reply_markup:{remove_keyboard:true}});
-   
-    list = gruopresults(actualid,nameArray,data);
-    
-    
-
-                  
-  
-}});}else {bot.sendMessage(actualid,'Виникла помилка завантаження даних. Спробуйте пізніше.');}
-
-
-
-});
-       
-        
-      }, 50000);
-     
       break;
   }
 });

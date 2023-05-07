@@ -2,6 +2,7 @@
   "dependencies": {
     "exceljs": "^4.3.0",
     "fs": "^0.0.1-security",
+    "mongoose": "^7.1.0",
     "node-telegram-bot-api": "^0.61.0",
     "request": "^2.88.2",
     "xlsx": "^0.18.5"
@@ -10,7 +11,9 @@
   "version": "1.0.0",
   "main": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon .\\Mongodb\\index.js",
+    "mts": "nodemon .\\buttonmtsnew.js      "
   },
   "repository": {
     "type": "git",
@@ -23,5 +26,8 @@
     "url": "https://github.com/AlexBulina/vstest/issues"
   },
   "homepage": "https://github.com/AlexBulina/vstest#readme",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
 }
