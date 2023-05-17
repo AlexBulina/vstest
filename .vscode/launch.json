@@ -30,6 +30,17 @@
           
             
             
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "interval test",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],"program": "${workspaceFolder}\\HTML training\\intervaltest.js",
+          
+            
+            
         }
     ]
 }
