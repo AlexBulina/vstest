@@ -12,7 +12,7 @@
    InlineKB,
    ButtonStartMenu,
    GetNameDB,
-   DateMod,
+   GetPackResultsCount,
    GetPackResults,
    GetCurDay,
    GetPeriodBack
@@ -26,36 +26,206 @@
  });
  let databurn, phone, list, ordertime, namer, homeadress, orderphone, ordernumclient, trimmedStr;
  let today = new Date();
+ let modifydate = new Date();
  let curyear = today.getFullYear();
  let outputdate, countcode = 0;
- let actualid, textid;
- let DateRegularexp = /(\d{2})\/(\d{2})\/(\d{4})/;
+ let actualid, textid,analcount ;
+ let DateRegularexp = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+ let DateRegularexp1 = /^(?!(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})$).*$/
+ ;
+
+ let TelegramId ;
+ let SelectTriger = false;
  let BurnTriger = false;
  let PhoneTriger = false;
+ let QuestionPhoneTriger = false;
  let intervalId = 0;
  let ArrayCheckAnalyze = [];
  let timepause = 10000; // 900000;
  let ii = true;
  const intervals = {};
+ const userphones = {};
+ const userburns = {};
  let isAlreadySent = false;
+  let getWorkperiodstatus;
+ const  demosmspng = '.\\demosms.png';
+let GetTrigerObject = {};
+let arrayyearcount = [];
 
- let getWorkperiodstatus;
  console.log('Телеграм бот MTS Clinic - запущено');
+
+
+
+
+ 
+ function StartMonitor(query){ 
+  GetNameDB(Number(query))
+      .then(telegram => {
+    outputdate = telegram._doc.BirthDay;
+    bot.sendMessage(query, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay} `)
+      .then(bot.sendMessage(query, 'Запускаю систему моніторингу актуальних замовлень в лабораторії. Сканування змін статусу виконання існуючих досліджень проходить що 15 хв.', {
+          reply_markup: {
+            keyboard: [
+              [{
+                text: 'Зупинити моніторинг',
+                request_contact: false,
+
+
+
+              }, ]
+            ],
+            resize_keyboard: false
+
+          }
+        })
+        .then(data => {
+
+          if ((query in intervals) == false) {
+
+
+            intervalId = setInterval(() => {
+
+
+              const currentTime = new Date();
+             
+              // Встановлення бажаного часу
+              const desiredTime = new Date();
+              desiredTime.setHours(23);
+              desiredTime.setMinutes(50);
+
+              // Порівняння годин
+              if (currentTime <= desiredTime) {
+                console.log('Час менший або дорівнює 23:50');
+                GetPackResults(telegram._doc.BirthDay, telegram._doc.Phone, GetPeriodBack(1000), GetCurDay())
+                  .then(response => {
+
+                    if (response.ok) {
+                      response.json()
+                        .then(data => {
+                          console.log(data);
+
+                          if (data.length == 0) {
+                            bot.sendMessage(query, 'У Вас не знайдено аналізів до виконання в поточному періоді.');
+                            stopInterval(query);
+                          }
+                          for (let i = 0; i < data.length; i++) {
+                            const resarray = data[i];
+                            isAlreadySent = false;
+                            for (let j = 0; j < ArrayCheckAnalyze.length; j++) {
+                              if (resarray.Docstatus == 'скасовано') {
+                                continue;
+                              }
+                              const item = ArrayCheckAnalyze[j];
+                              if (resarray.WebCode == item) {
+                                console.log(`Ці дані я вже передав: ${resarray.WebCode}`);
+                                isAlreadySent = true;
+                                //break;
+                              }
+                            }
+                            if (!isAlreadySent) {
+                              if (resarray.Docstatus == 'перевірено') {
+                                if (ArrayCheckAnalyze.length >= 0) {
+                                  bot.sendMessage(query, `Знайдено дослідження в статусі: ${resarray.Docstatus}. Надсилаю його Вам`)
+                                    .then(ArrayCheckAnalyze.push(resarray.WebCode));
+                                }
+
+
+                                GetPdfCode(query, resarray.WebCode, data.length);
+                              } else {
+                                if (ii == true) {
+
+
+
+
+                                  setTimeout(() => {
+                                    if (resarray.Docstatus != 'скасовано') {
+                                      bot.sendMessage(query, `Також знайдено  дослідження в статусі: ${resarray.Docstatus}. Очікуйте виконання`, {
+                                        reply_markup: {
+                                          remove_keyboard: false
+                                        }
+                                      });
+                                    }
+                                  }, 6000);
+                                  ii = false;
+
+
+
+
+                                }
+                              }
+
+                            }
+                          }
+
+
+
+
+
+
+                        });
+                    }
+                  });
+
+              } else {
+                stopInterval(query.message.chat.id);
+                console.log('Час більший за 23:59');
+                bot.sendMessage(query, 'Зупинка моніторингу по завершенню календарної доби. Для продовження моніторингу перезапустіть послугу в новій календарній добі.');
+              }
+
+
+              // telegram._doc.BirthDay,telegram._doc.Phone,'01-01-2023','12-21.2023'
+            }, timepause);
+            intervals[query] = intervalId;
+
+
+
+          } else {
+            bot.sendMessage(query, `⚠	Моніторинг результатів вже запущено.	`);
+          }
+        })
+
+
+
+
+
+
+
+      );
+
+  })
+  .catch(err => {
+    bot.sendMessage(query, 'У мене відсутні дані про Вас. Для запуску відстеження готовності виконанння дослідженнь, потрібно отримати від Вас, дату народження і Ваш номер мобільного телефону, який Ви реєстрували в лабораторії', GetKeybNull);
+
+
+
+  });
+}
+
+
+
  bot.onText(DateRegularexp, (msg) => {
-  databurn = null;
-   databurn = msg.text;
-   actualid = msg.chat.id;
+  if (validateDate(msg.text)==true){
+    userburns[msg.chat.id] = modifydate.DateMod(msg.text);
+ 
+  
+  
+  
 
-   if (phone == undefined) {
-     bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${databurn}`, GetKeyboardonlyBurn(databurn));
-   } else {
-     bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${databurn}`, GetKeyboradBurnandPhone(phone, databurn));
-     isdbName(actualid, Number(phone.slice(-10)), DateMod(databurn), GetPeriodBack(100), GetCurDay());
-   }
+  
 
 
+   
+  if (userphones[msg.chat.id] == undefined && validateDateObj(userburns[msg.chat.id])) {
+     bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${userburns[msg.chat.id]}`, GetKeyboardonlyBurn(userburns[msg.chat.id]));
+   } else if (validateDateObj(userburns[msg.chat.id]) && userphones[msg.chat.id]){
+     bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${userburns[msg.chat.id]}`, GetKeyboradBurnandPhone(userphones[msg.chat.id], userburns[msg.chat.id]));
+     isdbName(msg.chat.id, Number(userphones[msg.chat.id]), userburns[msg.chat.id], GetPeriodBack(1000), GetCurDay());
 
-   if (BurnTriger == true) {
+   } else{ (bot.sendMessage(msg.chat.id,'Відсутня інформація про Вас.'));}
+
+
+
+   if (GetTrigerObject[msg.chat.id].BurnTriger == true && userphones[msg.chat.id] == undefined) {
      bot.sendMessage(msg.chat.id, `Тепер попрошу Вас надати дозвіл на отримання Вашого мобільного номера. Натисніть кнопку , що з'явилася під полем вводу.`, {
        reply_markup: {
          keyboard: [
@@ -79,21 +249,69 @@
      });
    }
 
+ 
+ if (GetTrigerObject[msg.chat.id].SelectTriger == true && userphones[msg.chat.id] && userburns[msg.chat.id] && GetTrigerObject[msg.chat.id].PhoneTriger == false){bot.sendMessage(msg.chat.id,'Оберіть потрібний період',YearSelect);
+  } else {}
+ if (GetTrigerObject[msg.chat.id].StartScan == true && validateDateObj(userburns[msg.chat.id])){
+  
+ isdbName(msg.chat.id, Number(userphones[msg.chat.id]), userburns[msg.chat.id], GetPeriodBack(1000), GetCurDay())
+ .then(
+
+  setTimeout(()=>{StartMonitor(msg.chat.id);   },2000)
+    
+ 
+ 
+ 
+ 
+ )
+.catch(err =>{bot.sendMessage(msg.chat.id,'Помилка. Відсутня інформація про Вас в базі данних MTS Clinic',GetKeyboardonlyBurn(userburns[msg.chat.id]));})
+     
+
+ 
+ 
+ } else {}
+ 
 
 
 
 
+ } else { console.log('Помилка дата нулі');
+   
+  }
 
 
  });
- async function requestdata(msg, newac, newaca = newac) {
+ async function requestdataCount(msg, newac, newaca = newac, phoneq, outputdateq) {
+  try {
+    const response = await fetch(`${url}/custom/GetPatientExams?BurnDate=${outputdateq}&PhoneNumber=${phoneq}&BegDate=${newaca}-01-01&EndDate=${newac}-12-31`, {
+      headers: {
+        'Authorization': basicauth
+      }
+    });
 
+    if (response.ok) {
+      const data = await response.json();
+      const nameArray = data.length;
+      return nameArray;
+    } else {
+      throw new Error('Request failed');
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+  
+ 
+ async function requestdata(msg, newac, newaca,phoneq,outputdateq) {
+
+    
 
    bot.sendMessage(msg, `Починаю пошук інформації. Результат виконання запиту - це окремі файли pdf формату. Час виконання може бути значним. Зачекайте повного виконання запиту.`)
 
+    if (phoneq == undefined || outputdateq == undefined || validateDateObj(outputdateq)==false) {bot.sendMessage(msg,'Виникла помилка. Відсутні або некоректні дані. Пройдіть процедуру з головного меню - заново');} else {
 
-
-   await fetch(`${url}/custom/GetPatientExams?BurnDate=${outputdate}&PhoneNumber=${phone}&BegDate=${newaca}-01-01&EndDate=${newac}-12-31`, {
+   await fetch(`${url}/custom/GetPatientExams?BurnDate=${outputdateq}&PhoneNumber=${phoneq}&BegDate=${newaca}-01-01&EndDate=${newac}-12-31`, {
        headers: {
          // 'Authorization': 'Basic TWVkVGVjaHxNZWRUZWNoV2ViOk1lZFRlY2gxMjMh'
          'Authorization': basicauth
@@ -104,7 +322,7 @@
      })
      .then(response => {
        //response.ok
-       if (response) {
+       if (response.ok) {
          response.json()
            .then(data => {
 
@@ -136,7 +354,7 @@
 
 
      });
- }
+    }}
 
 
  async function gruopresults(msg, nameArray, data) {
@@ -168,11 +386,6 @@
 
      }
 
-     // setTimeout(()=>{
-     // bot.sendMessage(msg, `👩‍💻 Вивантаження данних завершено успішно. Дякуємо за терпіння.`);
-     // },4000);
-
-     //return true; 
      else {
        bot.sendMessage(msg, `Замовлення  ${data[i].WebCode} поки в процесі виконання. `);
        console.log('Замовлення в процесі роботи');
@@ -182,63 +395,76 @@
 
 
  bot.on('contact', (msg) => {
-   phone = (msg.contact.phone_number).slice(-10); // Отримуємо номер телефону з об'єкту contact
-   if (databurn == undefined) {
-     console.log('error data lost');
-     bot.sendMessage(msg.chat.id, `Дякуємо! Ваш номер телефону: ${phone}`, GetKeyboardPhone(phone));
-   } else {
-     bot.sendMessage(msg.chat.id, `Дякуємо! Ваш номер телефону: ${phone}`, GetKeyboradBurnandPhone(phone, databurn));
+  // phone = (msg.contact.phone_number).slice(-10); // Отримуємо номер телефону з об'єкту contact
+  if (QuestionPhoneTriger == true){
+
+   // QuestionPhoneTriger = false;
+    setTimeout(()=>{  bot.sendMessage(msg.chat.id, `Вітаю Вас, поставте нам запитання або озвучте проблему з якою Ви зіткнулись в нашій лабораторії. І ми в найкоротший час звяжемося з Вами`, {
+      reply_markup: {
+        force_reply: true
+      }
+    }).then(sent=>{
+     bot.onReplyToMessage(msg.chat.id, sent.message_id, (reply) => {
+                       if (reply.text == '/start' || reply.text == undefined || reply.text.length ==0){bot.sendMessage(msg.chat.id,'Введено некоректний текст');}else{
+       bot.sendMessage(msg.chat.id, `Ваше запитання відправлено оператору. Очікуйте відповідь.`).then(QuestionPhoneTriger = false);
+       //  bot.sendMessage(chatId,namer).then((sent)=>{ bot.forwardMessage(-813260675, chatId, sent.message_id); } );
+       
+       bot.sendMessage(-954144335, `Надійшло запитання від користувача Телеграм-бота ${sent.chat.first_name}\n     \nТекст запитання:\n ${reply.text}\n Номер телефону: ${userphones[msg.chat.id]}    \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
+         parse_mode: 'HTML'
+       });
+     }});});},1200);
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  }
+   if (msg.chat.id in userphones){}else{userphones[msg.chat.id]= (msg.contact.phone_number).slice(-10);}
+   if (msg.chat.id in userburns  && validateDateObj(userburns[msg.chat.id])== true){ 
+       bot.sendMessage(msg.chat.id, `Дякуємо! Ваш номер телефону: ${msg.contact.phone_number}`, GetKeyboradBurnandPhone((msg.contact.phone_number).slice(-10), userburns[msg.chat.id]));
+           isdbName(msg.chat.id, Number((msg.contact.phone_number).slice(-10)), userburns[msg.chat.id], GetPeriodBack(1000), GetCurDay())
+           .catch(err =>{bot.sendMessage(msg.chat.id,'Помилка. Відсутня інформація про Вас в базі данних MTS Clinic');});
+
+      } 
+   
+    else {
+     // if (QuestionPhoneTriger == false){} else {}
+     if (GetTrigerObject[msg.chat.id].PhoneTriger== true){bot.sendMessage(msg.chat.id, `Дякуємо! Ваш номер телефону: ${msg.contact.phone_number}`, GetKeyboardPhone((msg.contact.phone_number).slice(-10)));
+   }
      //----------------------ту треба всативити обробку запиту на імя
-     isdbName(actualid, Number(phone.slice(-10)), DateMod(databurn), GetPeriodBack(100), GetCurDay());
-     outputdate = DateMod(databurn);
+    // outputdate = DateMod(databurn);
 
    }
+   if (GetTrigerObject[msg.chat.id].SelectTriger && (userphones[msg.chat.id] != undefined)  && validateDateObj(userburns[msg.chat.id]) && !GetTrigerObject[msg.chat.id].PhoneTriger ){
+    bot.sendMessage(msg.chat.id,'Оберіть потрібний період',YearSelect);}
 
 
 
    //bot.sendMessage(msg.chat.id, `Дякуємо! Ваш номер телефону: ${phone}`,GetKeybOnlyPhone); // Відправляємо повідомлення з підтвердженням
 
-   if (PhoneTriger) {
-     bot.sendMessage(msg.chat.id, 'Виберіть період,який Вас цікавить:', {
-
-       reply_markup: {
-         inline_keyboard: [
-           [{
-             text: `1. ${curyear-3}`,
-             callback_data: 'button12'
-           }],
-           [{
-             text: `2. ${curyear-2}`,
-             callback_data: 'button11'
-           }],
-           [{
-             text: `3. ${curyear-1}`,
-             callback_data: 'button9'
-           }],
-           [{
-             text: `4. ${curyear}`,
-             callback_data: 'button10'
-           }],
-           [{
-             text: '5. Усі роки',
-             callback_data: 'button13'
-           }]
-
-         ],
-
-       }
-
-
-     });
-   }
+   
 
 
 
 
 
 
-
-   console.log(outputdate);
+   console.log(GetTrigerObject);
    console.log(phone);
 
 
@@ -257,7 +483,7 @@
    reply_markup: {
      keyboard: [
        [{
-         text: 'Надіслати номер телефону',
+         text: 'Крок 1: Надіслати номер телефону',
          request_contact: true
        }],
 
@@ -265,7 +491,7 @@
 
 
        // Вмикаємо запит на надсилання контакту
-       [`Дата народження`]
+       [`Крок 2: Дата народження`]
 
 
      ],
@@ -273,6 +499,34 @@
 
    }
  };
+
+
+const YearSelect = {   reply_markup: {
+  inline_keyboard: [
+    [{
+      text: `1. ${curyear-3}`,
+      callback_data: 'button12'
+    }],
+    [{
+      text: `2. ${curyear-2}`,
+      callback_data: 'button11'
+    }],
+    [{
+      text: `3. ${curyear-1}`,
+      callback_data: 'button9'
+    }],
+    [{
+      text: `4. ${curyear}`,
+      callback_data: 'button10'
+    }],
+    [{
+      text: '5. Усі роки',
+      callback_data: 'button13'
+    }]
+
+  ],remove_keyboard: false
+
+}};
 
  function GetKeyboardPhone(getphone) {
    const GetKeybOnlyPhone = {
@@ -300,6 +554,69 @@
 
    return GetKeybOnlyPhone;
  }
+
+
+ function validateDateObj(dateString) {
+  // Шаблон даты: ГГГГ-ММ-ДД
+  var pattern = /^\d{4}-\d{2}-\d{2}$/;
+
+  // Проверяем совпадение с шаблоном
+  if (!pattern.test(dateString)) {
+    return false;
+  }
+
+  // Разбиваем строку на составляющие
+  var parts = dateString.split('-');
+  var year = parseInt(parts[0], 10);
+  var month = parseInt(parts[1], 10);
+  var day = parseInt(parts[2], 10);
+
+  // Проверяем корректность даты
+  if (year < 1000 || year > 9999 || month === 0 || month > 12) {
+    return false;
+  }
+
+  // Проверяем количество дней в месяце
+  var maxDay = new Date(year, month, 0).getDate();
+  if (day === 0 || day > maxDay) {
+    return false;
+  }
+
+  // Дата прошла все проверки
+  return true;
+}
+
+
+ function validateDate(dateString) {
+  // Шаблон даты: дд/мм/гггг
+  var pattern = /^\d{2}\/\d{2}\/\d{4}$/;
+
+  // Проверяем совпадение с шаблоном
+  if (!pattern.test(dateString)) {
+    return false;
+  }
+
+  // Разбиваем строку на составляющие
+  var parts = dateString.split('/');
+  var day = parseInt(parts[0], 10);
+  var month = parseInt(parts[1], 10);
+  var year = parseInt(parts[2], 10);
+
+  // Проверяем корректность даты
+  if (year < 1000 || year > 9999 || month === 0 || month > 12) {
+    return false;
+  }
+
+  // Проверяем количество дней в месяце
+  var maxDay = new Date(year, month, 0).getDate();
+  if (day === 0 || day > maxDay) {
+    return false;
+  }
+
+  // Дата прошла все проверки
+  return true;
+}
+
 
  function GetKeyboardonlyBurn(getburn) {
    const keyboardOnlyBurn = {
@@ -332,7 +649,7 @@
      reply_markup: {
        keyboard: [
          [{
-           text: `Ваш номер телефону:\n ${getphone} `,
+           text: `Ваш номер телефону: ${getphone} `,
            request_contact: true
          }],
 
@@ -340,7 +657,7 @@
 
 
          // Вмикаємо запит на надсилання контакту
-         [`Дата народження: \n ${getburn}`]
+         [`Дата народження: ${getburn}`]
 
 
        ],
@@ -384,7 +701,7 @@
        return getweasher;
      })
      .catch(error => {
-       // console.error(error);
+       console.error(error);
 
      })
      .then(getweasher => fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${getweasher.latitude}&lon=${getweasher.longitude}&appid=${getweasher.appid}&units=metric&lang=ua`)
@@ -398,7 +715,7 @@
            starttime.setHours(8);
            starttime.setMinutes(0);
 
-           switch (day + 1) {
+           switch (day) {
 
              case 0:
 
@@ -409,9 +726,9 @@
              case 3:
              case 4:
              case 5:
-               if (hours < 18 && (now.getTime() >= starttime.getTime())) {
+               if (hours < 17 && (now.getTime() >= starttime.getTime())) {
 
-                 bot.sendMessage(chatid, ('👉 Ми, наразі відчинені.\nГрафік роботи сьогодні: 08:00 - 18:00\n                    \nПогода на сьогодні. \nСплануйте дорогу комфортно до нас. \n                 \nЗараз ' + Math.ceil(data.main.temp) + ' °С в місті ' + getweasher.city + ' \nВідчувається як:  ' + Math.round(data.main.feels_like) + ' °С' + '\n' + ((data.weather[0].description).charAt(0).toUpperCase() + (data.weather[0].description).slice(-10))))
+                 bot.sendMessage(chatid, ('👉 Ми, наразі відчинені.\nГрафік роботи сьогодні: 08:00 - 17:00\n                    \nПогода на сьогодні. \nСплануйте дорогу комфортно до нас. \n                 \nЗараз ' + Math.ceil(data.main.temp) + ' °С в місті ' + getweasher.city + ' \nВідчувається як:  ' + Math.round(data.main.feels_like) + ' °С' + '\n' + ((data.weather[0].description).charAt(0).toUpperCase() + (data.weather[0].description).slice(1))));
 
 
 
@@ -422,7 +739,7 @@
 
              case 6:
                if (hours < 15 && hours >= 8) {
-                 bot.sendMessage(chatid, ('💉🔬🩺🧑‍⚕️\nГрафік роботи сьогодні: 08:00 - 15:00\nСплануйте дорогу комфортно до нас.\n                 \nПогода на сьогодні.\nЗараз ' + Math.ceil(data.main.temp) + ' °С в місті ' + getweasher.city + ' \nВідчувається як:  ' + Math.round(data.main.feels_like) + ' °С' + '\n' + ((data.weather[0].description).charAt(0).toUpperCase() + (data.weather[0].description).slice(-10))));
+                 bot.sendMessage(chatid, ('💉🔬🩺🧑‍⚕️\nГрафік роботи сьогодні: 08:00 - 15:00\nСплануйте дорогу комфортно до нас.\n                 \nПогода на сьогодні.\nЗараз ' + Math.ceil(data.main.temp) + ' °С в місті ' + getweasher.city + ' \nВідчувається як:  ' + Math.round(data.main.feels_like) + ' °С' + '\n' + ((data.weather[0].description).charAt(0).toUpperCase() + (data.weather[0].description).slice(1))));
                } else {
                  bot.sendMessage(chatid, '😭 Ми, наразі зачинені. Але, Ви можете скористатись нашими онлайн-послугами.☝');
                }
@@ -446,11 +763,11 @@
 
 
 
-           // bot.sendMessage(chatid,('Погода на сьогодні. \nСплануйте дорогу комфортно до нас. \n                 \nЗараз ' + Math.ceil(data.main.temp)+ ' °С в місті ' + getweasher.city  + ' \nВідчувається як:  ' + Math.round(data.main.feels_like) + ' °С'+ '\n' + ((data.weather[0].description).charAt(0).toUpperCase()+ (data.weather[0].description).slice(1) )))
          }
 
 
-       ));
+       ).catch(err => {console.log('Помилка в функції виклику данних погоди. Рядок 692' + err);})
+       );
  }
 
 
@@ -505,12 +822,14 @@
 
  bot.on('message', (msg) => {
    const chatId = msg.chat.id;
-   textid = msg.text;
+   if (msg.contact === undefined){
+    console.log( DateRegularexp.test(msg.text));
+     if ( validateDate(msg.text) || msg.text == '/start' || msg.text.includes('Дата') || msg.text.includes('Зупинити') || QuestionPhoneTriger ){console.log(validateDate(msg.text))}
+     else {bot.sendMessage(msg.chat.id,'Внесений невірно формат дати народження. Спробуйте знову.');}}
 
-
-   if (textid === 'Зупинити моніторинг') {
+   if ( msg.text === 'Зупинити моніторинг') {
      // Отримання поточного часу
-     stopInterval(chatId);
+     stopInterval(msg.chat.id);
 
    }
 
@@ -520,30 +839,38 @@
 
 
 
-
-   if (msg.text === 'Дата народження') {
+    if (msg.text != undefined){
+   if (msg.text.includes('Дата народження')) {
      bot.sendMessage(chatId, 'Введіть свою дату народження в форматі ДД/ММ/РРРР - для унікальної ідентифікації вас в базі данних лабораторії MTS Clinic');
+     
 
 
 
-
-   }
+   }} 
 
 
 
    if (msg.text === '/start') {
 
-     bot.sendSticker(chatId, 'CAACAgIAAxkBAAEIyH5kTfKJfjKEmYHi8CKOq2f7YZupTwACGCUAAn2PcUrNxIKmFCxpby8E')
+     bot.sendSticker(msg.chat.id, 'CAACAgIAAxkBAAEIyH5kTfKJfjKEmYHi8CKOq2f7YZupTwACGCUAAn2PcUrNxIKmFCxpby8E')
        .then(
-
-         GetNameDB(chatId).then(telegram => {
-           outputdate = DateMod(telegram._doc.BirthDay);
-           bot.sendMessage(chatId, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay}`)
-             .then(getW(chatId, 'Пісочин'),
+       
+         GetNameDB(msg.chat.id).then(telegram => {
+          userburns[msg.chat.id]=telegram._doc.BirthDay;
+          userphones[msg.chat.id] = telegram._doc.Phone;
+          // actualid = msg.from.id;
+         
+           bot.sendMessage(chatId, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay}`,{
+            reply_markup: {
+              remove_keyboard: true
+            }
+          })
+             .then(getW(msg.from.id, 'Пісочин'),
 
                setTimeout(() => {
+                SelectTriger = false;
 
-                 bot.sendMessage(chatId, 'Виберіть дію: 👇', InlineKB);
+                 bot.sendMessage(msg.chat.id, 'Виберіть дію: 👇', InlineKB);
 
 
 
@@ -563,10 +890,11 @@
            console.log('Помилка:', error);
 
            setTimeout(() => {
-             bot.sendMessage(chatId, `Вітаю Вас, Шановний відвідувач ${msg.from.first_name}`);
+             bot.sendMessage(msg.from.id, `Вітаю Вас, Шановний відвідувач ${msg.from.first_name}`)
+             .then(()=>{bot.sendMessage(msg.from.id, 'Виберіть дію: 👇', InlineKB);});
 
 
-             bot.sendMessage(chatId, 'Виберіть дію: 👇', InlineKB);
+             
 
 
 
@@ -597,6 +925,7 @@
    if (msg.text === undefined) {} else if (msg.text.length == 15) {
      const number1 = Number(msg.text);
      if (isNaN(number1) == false) {
+      
 
        bot.sendMessage(msg.from.id, '😸 Унікальний код введено вірно - починаю пошук Вашого замовлення 🔍');
 
@@ -607,16 +936,20 @@
          })
          .then(res => res.arrayBuffer())
          .then(buffer => {
+            if (buffer.byteLength < 1023){bot.sendMessage(msg.chat.id,'Код доступу відсутній в базі данних лабораторії MTS Clinic. Перевірте правильність набору комбінації.').then(QuestionPhoneTriger = false);}else
+
+          {
            const fileBufferpdf = Buffer.from(buffer);
 
            bot.sendDocument(msg.from.id, fileBufferpdf, {}, {
              filename: `${msg.text}.pdf`,
              contentType: 'application/pdf'
-           });
+           }).then(QuestionPhoneTriger = false);
 
-
+          }
          })
-         .catch(error => console.error(error));
+         .catch(error => {console.error(error);
+         QuestionPhoneTriger = false;});
 
      }
    }
@@ -635,37 +968,136 @@
 
    switch (data) {
      case 'button1':
+      QuestionPhoneTriger = true;
 
-       bot.sendMessage(chatId, 'Введіть 15 значний унікальний код замовлення. код можна знайти на бланку замовлення або в смс від лабораторії про готовність результатів.', {
+       bot.sendMessage(query.message.chat.id, 'Введіть 15 значний унікальний код замовлення. код можна знайти на бланку замовлення або в смс від лабораторії про готовність результатів.', {
          reply_markup: {
            remove_keyboard: true
          }
-       });
+       })
+       .then(bot.sendPhoto(query.message.chat.id,demosmspng));
 
 
        break;
      case 'button2':
-       BurnTriger = true;
-       PhoneTriger = true;
-       bot.sendMessage(chatId, 'Введіть свою дату народження в форматі ДД/ММ/РРРР - для унікальної ідентифікації вас в базі данних лабораторії MTS Clinic', {
-         reply_markup: {
-           remove_keyboard: true
-         }
-       });
+     
+      QuestionPhoneTriger = false;
+      GetTrigerObject = {
+        [query.message.chat.id]: {
+          SelectTriger: true,
+          BurnTriger: true,
+          PhoneTriger:  false,
+          StartScan: false,
+          arrayyearcount: []
+        }};
 
 
+
+function processIterations(i) {
+  if (i >= 0) {
+    return requestdataCount(query.message.chat.id, curyear - i, curyear - i, userphones[query.message.chat.id], userburns[query.message.chat.id])
+      .then(res => {
+
+        GetTrigerObject[query.message.chat.id].arrayyearcount.push(res);
+         // Добавляем текущее значение res в массив
+        return processIterations(i - 1); // Рекурсивно вызываем следующую итерацию с уменьшенным i
+      });
+  } else {
+    return Promise.resolve(); // Возвращаем успешно разрешенный промис при завершении всех итераций
+  }
+}
+
+// Используем рекурсивную функцию для выполнения итераций
+processIterations(3)
+  .then(() => {
+    if (userphones[query.message.chat.id] && userburns[query.message.chat.id] != undefined){
+      
+      
+      bot.sendMessage(query.message.chat.id, 'Виберіть період,який Вас цікавить:', {
+
+      reply_markup: {
+        inline_keyboard: [
+          [{
+            text: `1. ${curyear-3}: Аналізів (${ GetTrigerObject[query.message.chat.id].arrayyearcount[0]}) `,
+            callback_data: 'button12'
+          }],
+          [{
+            text: `2. ${curyear-2}: Аналізів (${ GetTrigerObject[query.message.chat.id].arrayyearcount[1]})`,
+            callback_data: 'button11'
+          }],
+          [{
+            text: `3. ${curyear-1}: Аналізів (${ GetTrigerObject[query.message.chat.id].arrayyearcount[2]})`,
+            callback_data: 'button9'
+          }],
+          [{
+            text: `4. ${curyear}: Аналізів (${ GetTrigerObject[query.message.chat.id].arrayyearcount[3]}) `,   
+            callback_data: 'button10'
+          }],
+          [{
+            text: `5. Усі роки: Аналізів (${ GetTrigerObject[query.message.chat.id].arrayyearcount.sumArray( GetTrigerObject[query.message.chat.id].arrayyearcount)}) `,
+            callback_data: 'button13'
+          }]
+
+        ],remove_keyboard: false
+
+      }
+});
+bot.sendMessage(query.message.chat.id,'В разі потреби скорегуйте свою дату народження та номер телефону через кнопки клавіатури , що внизу.Також, якщо Ви реєстрували дослідження своєї дитини на свій номер, то введіть дату народження Вашої дитини чи окремих дітей і отримайте їхні результати досліджень.',GetKeyboradBurnandPhone(userphones[query.message.chat.id],userburns[query.message.chat.id] )
+// 
+
+
+
+).then(GetTrigerObject[query.message.chat.id].PhoneTriger =false);
+} else {
+   
+   bot.sendMessage(query.message.chat.id, 'Введіть свою дату народження в форматі ДД/ММ/РРРР - для унікальної ідентифікації вас в базі данних лабораторії MTS Clinic', {
+     reply_markup: {
+       remove_keyboard: true
+     }
+   });
+
+}
+
+  });
+      
+      
+      
+      requestdataCount(query.message.chat.id, curyear, curyear, userphones[query.message.chat.id], userburns[query.message.chat.id])
+  .then(res => {
+ 
+    return Promise.resolve(res); // Вернуть промис для обеспечения порядка выполнения
+  })
+  .catch(err => {console.log('Виникла помилка при зверненні на підрахунок кількості аналізів'+ err);});
+ 
+   
+
+    
+
+        
+
+        
+
+
+
+
+
+        
+      
+      
+  
+       
 
        break;
      case 'button3':
-       bot.sendMessage(chatId, 'Адреса медичного центру MTS Clinic. м.Пісочин, Набережна 11/1').then(() => {
-         bot.sendMessage(chatId, `Мобільний телефон: \n 0932962501\n0960414004\nПослуги: забір аналізів, \nПункт вакцинації від COVID-19.\n`, {
+       bot.sendMessage(query.message.chat.id, 'Адреса медичного центру MTS Clinic. м.Пісочин, Набережна 11/1').then(() => {
+         bot.sendMessage(query.message.chat.id, `Мобільний телефон: \n 0932962501\n0960414004\nПослуги: забір аналізів, \nПункт вакцинації від COVID-19.\n`, {
            parse_mode: 'Markdown'
          });
-         bot.sendLocation(chatId, 49.962673, 36.09681, {
+         bot.sendLocation(query.message.chat.id, 49.962673, 36.09681, {
            reply_markup: {
              remove_keyboard: true
            }
-         })
+         });
 
 
 
@@ -678,7 +1110,7 @@
        break;
      case 'button4':
 
-       bot.sendMessage(chatId, '➡ Виберіть потрібну філію:', {
+       bot.sendMessage(query.message.chat.id, '➡ Виберіть потрібну філію:', {
          reply_markup: {
            inline_keyboard: [
              [{
@@ -730,13 +1162,13 @@
        break;
      case 'button5':
 
-       bot.sendMessage(chatId, '💻 Завантажую актуальний прайс', {
+       bot.sendMessage(query.message.chat.id, '💻 Завантажую актуальний прайс', {
          reply_markup: {
            remove_keyboard: true
          }
        });
 
-       bot.sendDocument(chatId, `C:\\Milamed request analyze\\actualpricemts.xlsx`, {
+       bot.sendDocument(query.message.chat.id, `C:\\Milamed request analyze\\actualpricemts.xlsx`, {
          caption: 'Актуальний прайс лабораторії Mtsclinic'
 
        });
@@ -759,49 +1191,49 @@
 
        break;
      case 'button8':
-       bot.sendDocument(chatId, `C:\\Telegram\\Priceclinicmilamed.xlsx`, {
+       bot.sendDocument(query.message.chat.id, `C:\\Telegram\\Priceclinicmilamed.xlsx`, {
          caption: '📋Актуальний прайс медичного центру Mtsclinic'
 
        });
 
        break;
      case 'button9':
-       if (actualid == undefined) {} else {
-         requestdata(actualid, curyear - 1);
+       if (query.message.chat.id == undefined) {} else {
+         requestdata(query.message.chat.id, (curyear-1),(curyear-1),userphones[query.message.chat.id],userburns[query.message.chat.id]);
        }
 
        break;
      case 'button10':
-       if (actualid == undefined) {} else {
-         requestdata(actualid, curyear);
+       if (query.message.chat.id == undefined) {} else {
+         requestdata(query.message.chat.id, curyear,curyear,userphones[query.message.chat.id],userburns[query.message.chat.id]);
        }
 
 
        break;
      case 'button11':
-       if (actualid == undefined) {} else {
-         requestdata(actualid, curyear - 2);
+       if (query.message.chat.id == undefined) {} else {
+         requestdata(query.message.chat.id, (curyear - 2),(curyear - 2),userphones[query.message.chat.id],userburns[query.message.chat.id]);
        }
 
 
        break;
      case 'button12':
-       if (actualid == undefined) {} else {
-         requestdata(actualid, curyear - 3);
+       if (query.message.chat.id == undefined) {} else {
+         requestdata(query.message.chat.id, (curyear - 3),(curyear - 3),userphones[query.message.chat.id],userburns[query.message.chat.id]);
        }
 
 
        break;
      case 'button13':
-       if (actualid == undefined) {} else {
-         requestdata(actualid, curyear, 2010);
+       if (query.message.chat.id == undefined) {} else {
+         requestdata(query.message.chat.id, curyear, 2010,userphones[query.message.chat.id],userburns[query.message.chat.id]);
        }
 
 
        break;
 
      case 'PointFence1':
-       bot.sendMessage(chatId, `🕐<b><u>Пісочин.</u></b>` + 'тел.:(0932962501,0960414004)(Viber,Telegram)\nПункт вакцинації від COVID-19\nАдреса: Набережна, 11/1\nПн-Пт с 08:00-18:00,\n Сб с 08:00-16:00, \nНд с 08:00-14:00', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Пісочин.</u></b>` + 'тел.:(0932962501,0960414004)(Viber,Telegram)\nПункт вакцинації від COVID-19\nАдреса: Набережна, 11/1\nПн-Пт с 08:00-17:00,\n Сб с 08:00-16:00, \nНд с 08:00-14:00', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -811,7 +1243,7 @@
 
      case 'PointFence2':
 
-       bot.sendMessage(chatId, `🕐<b><u>Баварія.</u></b>` + 'тел.: (0932962507)(Viber)\nАдреса: проспект Ново-Баварський, 70\nПн-Сб с 08:00-12:00, Нд (вихідний)', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Баварія.</u></b>` + 'тел.: (0932962507)(Viber)\nАдреса: проспект Ново-Баварський, 70\nПн-Сб с 08:00-12:00, Нд (вихідний)', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -819,7 +1251,7 @@
        });
        break;
      case 'PointFence3':
-       bot.sendMessage(chatId, `🕐<b><u>Аеропорт.</u></b>` + ' тел.:(0932962509)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Проспект Гагарина, 316Б\nПн-Пт с 07:30-12:00, Нд (вихідний)', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Аеропорт.</u></b>` + ' тел.:(0932962509)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Проспект Гагарина, 316Б\nПн-Пт с 07:30-12:00, Нд (вихідний)', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -830,7 +1262,7 @@
        break;
 
      case 'PointFence4':
-       bot.sendMessage(chatId, `🕐<b><u>Південний вокзал.</u></b>` + ' тел.:(0932962504)(Viber,Telegram)\nАдреса: Котляра, 12\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Південний вокзал.</u></b>` + ' тел.:(0932962504)(Viber,Telegram)\nАдреса: Котляра, 12\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -839,7 +1271,7 @@
 
        break;
      case 'PointFence5':
-       bot.sendMessage(chatId, `🕐<b><u>Рогань. </u></b>` + 'тел.:(0932962505)(Viber)\nАдреса: Сергія Грицевця, 9\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Рогань. </u></b>` + 'тел.:(0932962505)(Viber)\nАдреса: Сергія Грицевця, 9\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -849,7 +1281,7 @@
        break;
 
      case 'PointFence6':
-       bot.sendMessage(chatId, `🕐<b><u>Салтівка. </u></b>` + 'тел.:(0932962506)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Тракторобудівників, 160В\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Салтівка. </u></b>` + 'тел.:(0932962506)(Viber) (ЗНОВУ ПРАЦЮЄ)\nАдреса: Тракторобудівників, 160В\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -859,7 +1291,7 @@
        break;
 
      case 'PointFence7':
-       bot.sendMessage(chatId, `🕐<b><u>Холодна Гора. </u></b>` + 'тел.:(0932962502)(Viber)\nАдреса: Полтавський шлях, 152 (Дитяча поліклініка №19 кабінет №8)\nПн-Сб с 08:00-12:00, Нд (вихідний)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Холодна Гора. </u></b>` + 'тел.:(0932962502)(Viber)\nАдреса: Полтавський шлях, 152 (Дитяча поліклініка №19 кабінет №8)\nПн-Сб с 08:00-12:00, Нд (вихідний)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -868,7 +1300,7 @@
 
        break;
      case 'PointFence8':
-       bot.sendMessage(chatId, `🕐<b><u>Люботин. </u></b>` + 'тел.:(0932962508)(Viber)\nАдреса: Шевченка, 15 (каб. 2) (Міська поліклініка)\nПн-Сб с 08:00-12:00, Нд (вихідний)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Люботин. </u></b>` + 'тел.:(0932962508)(Viber)\nАдреса: Шевченка, 15 (каб. 2) (Міська поліклініка)\nПн-Сб с 08:00-12:00, Нд (вихідний)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -877,7 +1309,7 @@
 
        break;
      case 'PointFence9':
-       bot.sendMessage(chatId, `🕐<b><u>Холодна Гора. </u></b>` + ' тел.:(0637078733)(Viber)\nАдреса: Дудинської, 1а\nПн-Сб с 07:30-12:00, Нд (вихідний)​​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Холодна Гора. </u></b>` + ' тел.:(0637078733)(Viber)\nАдреса: Дудинської, 1а\nПн-Сб с 07:30-12:00, Нд (вихідний)​​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -886,7 +1318,7 @@
 
        break;
      case 'PointFence10':
-       bot.sendMessage(chatId, `🕐<b><u>Комунальний ринок. </u></b>` + 'тел.:(0932962513)(Viber)\nАдреса: Льва Ландау, 8\n(працює за індивідуальним графіком)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>Комунальний ринок. </u></b>` + 'тел.:(0932962513)(Viber)\nАдреса: Льва Ландау, 8\n(працює за індивідуальним графіком)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -895,7 +1327,7 @@
 
        break;
      case 'PointFence11':
-       bot.sendMessage(chatId, `🕐<b><u>ХТЗ. </u></b>` + ' тел.:(932962510)(Viber)\nАдреса: пр-т. Олександрівський, 124\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
+       bot.sendMessage(query.message.chat.id, `🕐<b><u>ХТЗ. </u></b>` + ' тел.:(932962510)(Viber)\nАдреса: пр-т. Олександрівський, 124\nПн-Сб с 07:30-12:00, Нд (вихідний)​', {
          reply_markup: {
            remove_keyboard: true
          },
@@ -904,72 +1336,76 @@
 
        break;
      case 'PointFence12':
-       bot.sendMessage(chatId, "Мобільний телефон:\n0961912392\nПослуги: забір аналізів,\nГрафік роботи: понеділок-п’ятниця 08:30-15:00\nсубота, неділя-вихідний\n    \nПослуги :УЗД.\nМобільний телефон: 0964721455\nГрафік роботи: понеділок-п’ятниця 08:00-16:00\nсубота, неділя-вихідний\n", {
+       bot.sendMessage(query.message.chat.id, "Мобільний телефон:\n0961912392\nПослуги: забір аналізів,\nГрафік роботи: понеділок-п’ятниця 08:30-15:00\nсубота, неділя-вихідний\n    \nПослуги :УЗД.\nМобільний телефон: 0964721455\nГрафік роботи: понеділок-п’ятниця 08:00-16:00\nсубота, неділя-вихідний\n", {
          parse_mode: 'HTML'
        });
 
        break;
 
      case 'homeorder':
+     
        const now = new Date();
        let day = now.getDay();
        if (day != 0 && day != 6) {
-         getWorkperiodstatus = isWorkingTime('8:00', '18:00'); //18:00
+         getWorkperiodstatus = isWorkingTime('8:00', '17:00'); //17:00
        } else if (day == 6) {
-         getWorkperiodstatus = isWorkingTime('8:00', '16:00');
+         getWorkperiodstatus = isWorkingTime('8:00', '16:00'); //16
        } else {
          getWorkperiodstatus = false;
        }
 
 
-       if (getWorkperiodstatus) {
+       if (getWorkperiodstatus) { 
+        QuestionPhoneTriger = false;
 
-         bot.sendMessage(chatId, `💳 Вартість послуги в межах м.Пісочин 150 грн.\n За межі міста - ціна індивідульна в залежності від кінцевої вартості послуг таксі.\n      \n 📝 Будь-ласка, заповніть коротку анкету і наш оператор зателефонує Вам для уточнення інформації щодо місця й часу забору та кінцевої вартості даної послуги.`);
+         bot.sendMessage(query.message.chat.id, `💳 Вартість послуги в межах м.Пісочин 150 грн.\n За межі міста - ціна індивідульна в залежності від кінцевої вартості послуг таксі.\n      \n 📝 Будь-ласка, заповніть коротку анкету і наш оператор зателефонує Вам для уточнення інформації щодо місця й часу забору та кінцевої вартості даної послуги.`);
 
          setTimeout(() => {
 
 
-           bot.sendMessage(chatId, '❓ Ваше Ім\'я', {
+           bot.sendMessage(query.message.chat.id, '❓ Ваше Ім\'я', {
                reply_markup: {
                  force_reply: true
                }
              })
              .then((sent) => {
-               messageid = sent.message_id;
-               bot.onReplyToMessage(chatId, messageid, (reply) => {
+             
+               bot.onReplyToMessage(query.message.chat.id, sent.message_id, (reply) => {
                  namer = reply.text;
                  console.log(namer);
 
-                 bot.sendMessage(chatId, `📱Ваш телефон. Приклад: 0501234567`, {
+                 bot.sendMessage(query.message.chat.id, `📱Ваш телефон. Приклад: 0501234567`, {
                    reply_markup: {
                      force_reply: true // Запитуємо відповідь користувача
                    }
                  }).then((sent) => {
-                   messageid = sent.message_id;
-                   bot.onReplyToMessage(chatId, messageid, (reply) => {
+                 
+                   bot.onReplyToMessage(query.message.chat.id, sent.message_id, (reply) => {
                      orderphone = reply.text;
+                     if (orderphone.length == 10){
                      console.log(orderphone);
-                     bot.sendMessage(chatId, '💁‍♀️Де Вам зручно отримати послугу. Напишіть адресу в форматі (місто/вулиця/номер будинку/квартири)', {
+                     bot.sendMessage(query.message.chat.id, '💁‍♀️Де Вам зручно отримати послугу. Напишіть адресу в форматі (місто/вулиця/номер будинку/квартири)', {
                        reply_markup: {
                          force_reply: true
                        }
                      }).then((sent) => {
-                       messageid = sent.message_id;
+                
 
-                       bot.onReplyToMessage(chatId, messageid, (reply) => {
+                       bot.onReplyToMessage(query.message.chat.id, sent.message_id, (reply) => {
                          homeadress = reply.text;
                          console.log(homeadress);
 
-                         bot.sendMessage(chatId, '🙏Коли Вам зручно отримати послугу. Напишіть бажану дату виклику і час в форматі (ДД.ММ.РРРР-ГГ.ХХ)', {
+                         bot.sendMessage(query.message.chat.id, '🙏Коли Вам зручно отримати послугу. Напишіть бажану дату виклику і час в форматі (ДД.ММ.РРРР-ГГ.ХХ)', {
                            reply_markup: {
                              force_reply: true
                            }
                          }).then((sent) => {
-                           messageid = sent.message_id;
-
-                           bot.onReplyToMessage(chatId, messageid, (reply) => {
+                
+                          
+                           bot.onReplyToMessage(query.message.chat.id, sent.message_id, (reply) => {
+                            QuestionPhoneTriger = false;
                              const ordertime = reply.text;
-                             console.log(ordertime);
+                            
                              let todayfile = new Date();
                              const formattedDate = todayfile.toLocaleString('uk-UA', {
                                year: 'numeric',
@@ -986,22 +1422,22 @@
 
                              if (orderphone.length == 10) {
 
-                               GetNameDB(chatId).then(telegram => {
-                                     outputdate = DateMod(telegram._doc.BirthDay);
-                                     bot.sendMessage(chatId, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay}`);
+                               GetNameDB(query.message.chat.id).then(telegram => {
+                              
+                                     bot.sendMessage(query.message.chat.id, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay}`);
 
 
-                                     bot.sendMessage(chatId, `${ordernum}\nДякую, ${telegram.FullName}. Ваше звернення збережено і передано відповідальному працівнику.\n Через деякий час з Вами звяжуться щодо уточнення деталей. `)
+                                     bot.sendMessage(query.message.chat.id, `${ordernum}\nДякую, ${telegram.FullName}. Ваше звернення збережено і передано відповідальному працівнику.\n Через деякий час з Вами звяжуться щодо уточнення деталей. `)
                                        .then(
 
 
 
 
-                                         fs.appendFile('./bot_logmts.txt', `[${todayfile}]\nНадійшло звернення від кліента на забір крові на дому\n${ordernum}\nІм\'я: ${namer}\nТелефон:  ${orderphone}\nАдреса виклику: ${homeadress}\nБажана дата та час: ${ordertime}\nЗнайдене повне Ім\'я в базі даних:  ${telegram.FullName}`, (err) => {
+                                         fs.appendFile('./bot_logmts.txt', `[${todayfile}]\nНадійшло звернення від кліента на забір крові на дому\n${ordernum}\nІм\'я: ${namer}\nТелефон:  ${orderphone}\nАдреса виклику: ${homeadress}\nБажана дата та час: ${ordertime}\nВказане ім\'я користувача в анкеті: ${namer}\nЗнайдене повне Ім\'я в базі даних:  ${telegram.FullName}`, (err) => {
                                            if (err) throw err;
-                                           bot.sendMessage(-813260675, `Надійшло звернення від кліента на забір крові на дому\n<b>${ordernum}</b>\n     \nІм\'я: ${namer}\nТелефон: <b> ${orderphone}</b>\nАдреса виклику: ${homeadress}\nБажана дата та час: ${ordertime}\n \nЗнайдене повне Ім\'я в базі даних:  ${telegram.FullName}\n       \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
+                                           bot.sendMessage(-954144335, `Надійшло звернення від кліента на забір крові на дому\n<b>${ordernum}</b>\n     \nІм\'я: ${namer}\nТелефон: <b> ${orderphone}</b>\nАдреса виклику: ${homeadress}\nБажана дата та час: ${ordertime}\nВказане ім\'я користувача в анкеті: ${namer}\nЗнайдене повне Ім\'я в базі даних:  ${telegram.FullName}\n       \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
                                              parse_mode: 'HTML'
-                                           })
+                                           });
                                            console.log('Дані були успішно дописані в кінець файлу');
                                          })
 
@@ -1018,15 +1454,15 @@
 
                                  .catch(err => {
                                    trimmedStr = 'Шановний кліент, що обираєте нас.';
-                                   bot.sendMessage(chatId, `${ordernum}\nДякую, ${trimmedStr}. Ваше звернення збережено і передано відповідальному працівнику.\n Через деякий час з Вами звяжуться щодо уточнення деталей. `)
+                                   bot.sendMessage(query.message.chat.id, `${ordernum}\nДякую, ${trimmedStr}. Ваше звернення збережено і передано відповідальному працівнику.\n Через деякий час з Вами звяжуться щодо уточнення деталей. `)
 
-                                   bot.sendMessage(-813260675, `Надійшло звернення від кліента на забір крові на дому\n<b>${ordernum}</b>\n     \nІм\'я: ${namer}\nТелефон: <b> ${orderphone}</b>\nАдреса виклику: ${homeadress}\nБажана дата та час: ${ordertime}\n       \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
+                                   bot.sendMessage(-954144335, `Надійшло звернення від кліента на забір крові на дому\n<b>${ordernum}</b>\n     \nІм\'я: ${namer}\nТелефон: <b> ${orderphone}</b>\nАдреса виклику: ${homeadress}\nБажана дата та час: ${ordertime}\n       \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
                                      parse_mode: 'HTML'
-                                   })
+                                   });
 
                                  });
                              } else {
-                               bot.sendMessage(chatId, 'Номер мобільного введено не вірно. Довжина номеру повинна бути 10 цифр. \n Почніть заповнення анкети замовлення спочатку - через головне меню. Дякуємо за порозуміння');
+                               bot.sendMessage(query.message.chat.id, 'Номер мобільного введено не вірно. Довжина номеру повинна бути 10 цифр. \n Почніть заповнення анкети замовлення спочатку - через головне меню. Дякуємо за порозуміння');
                              }
 
 
@@ -1038,13 +1474,17 @@
 
 
 
-                         });
+                         });   
 
 
                        });
 
 
-                     });
+                     }); }  else {
+                      
+                      bot.sendMessage(query.message.chat.id,'Помилка: Внесено некоректний номер телефону. Почніть заповнення анкети спочатку з головного меню бота, через кнопку Menu - /start ')
+                      
+                      console.log('Total Fuck');}
 
 
                    });
@@ -1067,31 +1507,33 @@
 
 
        } else {
-         bot.sendMessage(chatId, '😪 Ми, наразі зачинені. Звернення обробляються лише в робочий час.');
+         bot.sendMessage(query.message.chat.id, '😪 Ми, наразі зачинені. Звернення обробляються лише в робочий час.');
        };
 
 
        break;
 
      case 'monitor':
+      QuestionPhoneTriger = false;
+     GetTrigerObject = {
+        [query.message.chat.id]: {
+          SelectTriger: false,
+          BurnTriger: false,
+          PhoneTriger: true,
+          StartScan: true
+        }
+      };
+      // BurnTriger = false;
+       //PhoneTriger = true;
+  
+       
 
-       BurnTriger = false;
-       PhoneTriger = false;
-       GetNameDB(chatId)
-         .catch(err => {
-           console.log(`{Хаха я тут ${err}}`);
-
-           //GetPackResults(telegram._doc.BirthDay,phone,GetPeriodBack(100),GetCurDay())
-
-
-
-
-
-         })
+       GetNameDB(query.message.chat.id)
+        
          .then(telegram => {
-           outputdate = DateMod(telegram._doc.BirthDay);
-           bot.sendMessage(chatId, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay} `)
-             .then(bot.sendMessage(chatId, 'Запускаю систему моніторингу актуальних замовлень в лабораторії. Сканування змін статусу виконання існуючих досліджень проходить що 15 хв.', {
+           outputdate = telegram._doc.BirthDay;
+           bot.sendMessage(query.message.chat.id, `Вітаю Вас, ${telegram.FullName}\nВаш номер телефону: 0${telegram._doc.Phone}\nВаша дата народження: ${telegram._doc.BirthDay} `)
+             .then(bot.sendMessage(query.message.chat.id, 'Запускаю систему моніторингу актуальних замовлень в лабораторії. Сканування змін статусу виконання існуючих досліджень проходить що 15 хв.', {
                  reply_markup: {
                    keyboard: [
                      [{
@@ -1108,7 +1550,7 @@
                })
                .then(data => {
 
-                 if ((chatId in intervals) == false) {
+                 if ((query.message.chat.id in intervals) == false) {
 
 
                    intervalId = setInterval(() => {
@@ -1119,12 +1561,12 @@
                      // Встановлення бажаного часу
                      const desiredTime = new Date();
                      desiredTime.setHours(23);
-                     desiredTime.setMinutes(59);
+                     desiredTime.setMinutes(50);
 
                      // Порівняння годин
                      if (currentTime <= desiredTime) {
-                       console.log('Час менший або дорівнює 23:59');
-                       GetPackResults(telegram._doc.BirthDay, telegram._doc.Phone, GetPeriodBack(100), GetCurDay())
+                       console.log('Час менший або дорівнює 23:50');
+                       GetPackResults(telegram._doc.BirthDay, telegram._doc.Phone, GetPeriodBack(1000), GetCurDay())
                          .then(response => {
 
                            if (response.ok) {
@@ -1133,8 +1575,8 @@
                                  console.log(data);
 
                                  if (data.length == 0) {
-                                   bot.sendMessage(chatId, 'У Вас не знайдено аналізів до виконання в поточному періоді.');
-                                   stopInterval(chatId);
+                                   bot.sendMessage(query.message.chat.id, 'У Вас не знайдено аналізів до виконання в поточному періоді.');
+                                   stopInterval(query.message.chat.id);
                                  }
                                  for (let i = 0; i < data.length; i++) {
                                    const resarray = data[i];
@@ -1153,12 +1595,12 @@
                                    if (!isAlreadySent) {
                                      if (resarray.Docstatus == 'перевірено') {
                                        if (ArrayCheckAnalyze.length >= 0) {
-                                         bot.sendMessage(chatId, `Знайдено дослідження в статусі: ${resarray.Docstatus}. Надсилаю його Вам`)
+                                         bot.sendMessage(query.message.chat.id, `Знайдено дослідження в статусі: ${resarray.Docstatus}. Надсилаю його Вам`)
                                            .then(ArrayCheckAnalyze.push(resarray.WebCode));
                                        }
 
 
-                                       GetPdfCode(chatId, resarray.WebCode, data.length);
+                                       GetPdfCode(query.message.chat.id, resarray.WebCode, data.length);
                                      } else {
                                        if (ii == true) {
 
@@ -1167,7 +1609,7 @@
 
                                          setTimeout(() => {
                                            if (resarray.Docstatus != 'скасовано') {
-                                             bot.sendMessage(chatId, `Також знайдено  дослідження в статусі: ${resarray.Docstatus}. Очікуйте виконання`, {
+                                             bot.sendMessage(query.message.chat.id, `Також знайдено  дослідження в статусі: ${resarray.Docstatus}. Очікуйте виконання`, {
                                                reply_markup: {
                                                  remove_keyboard: false
                                                }
@@ -1195,20 +1637,20 @@
                          });
 
                      } else {
-                       stopInterval(chatId);
+                       stopInterval(query.message.chat.id);
                        console.log('Час більший за 23:59');
-                       bot.sendMessage(chatId, 'Зупинка моніторингу по завершенню календарної доби. Для продовження моніторингу перезапустіть послугу в новій календарній добі.');
+                       bot.sendMessage(query.message.chat.id, 'Зупинка моніторингу по завершенню календарної доби. Для продовження моніторингу перезапустіть послугу в новій календарній добі.');
                      }
 
 
                      // telegram._doc.BirthDay,telegram._doc.Phone,'01-01-2023','12-21.2023'
                    }, timepause);
-                   intervals[chatId] = intervalId;
+                   intervals[query.message.chat.id] = intervalId;
 
 
 
                  } else {
-                   bot.sendMessage(chatId, `Моніторинг результатів вже запущено.`);
+                   bot.sendMessage(query.message.chat.id, `⚠	Моніторинг результатів вже запущено. ⚠	`);
                  }
                })
 
@@ -1222,7 +1664,7 @@
 
          })
          .catch(err => {
-           bot.sendMessage(chatId, 'У мене відсутні дані про Вас. Для запуску відстеження готовності виконанння дослідженнь, потрібно отримати від Вас, дату народження і Ваш номер мобільного телефону, який Ви реєстрували в лабораторії', GetKeybNull);
+           bot.sendMessage(query.message.chat.id, 'У мене відсутні дані про Вас. Для запуску відстеження готовності виконанння дослідженнь, потрібно отримати від Вас, дату народження і Ваш номер мобільного телефону, який Ви реєстрували в лабораторії', GetKeybNull);
 
 
 
@@ -1241,10 +1683,21 @@
 
 
      case 'question':
+
+     GetTrigerObject = {
+      [query.message.chat.id]: {
+        SelectTriger: true,
+        BurnTriger: true,
+        PhoneTriger:  true,
+        StartScan: false
+      }};
+
+
+      QuestionPhoneTriger = true ;
        const nowq = new Date();
        let dayq = nowq.getDay();
        if (dayq != 0 && dayq != 6) {
-         getWorkperiodstatus = isWorkingTime('08:00', '18:00'); //18:00
+         getWorkperiodstatus = isWorkingTime('08:00', '17:00'); //18:00
        } else if (dayq == 6) {
          getWorkperiodstatus = isWorkingTime('08:00', '16:00');
        } else {
@@ -1254,15 +1707,12 @@
 
        if (getWorkperiodstatus) {
 
-         bot.sendMessage(chatId, `Вітаю Вас, поставте нам запитання або озвучте проблему з якою Ви зіткнулись в нашій лабораторії. І ми в найкоротший час звяжемося з Вами`, {
-             reply_markup: {
-               force_reply: true
-             }
-           })
-           .then((sent) => {
+       
+           
 
-             if (phone == undefined) {
-               bot.sendMessage(chatId, `Для користування данною функцією, надайте дозвіл на отримання Вашого номера телефону, через кнопку клавіатури [Надіслати номер телефону] і потім повторно запустити з головного меню пункт 10. \nТакож, Ви зможете вказати свою дату народження для унікальної ідентифікації Вас в нашій базі данних , як нашого кліента. Дякую `, {
+             if ( userphones[query.message.chat.id]== undefined) {
+              QuestionPhoneTriger = false ;
+               bot.sendMessage(query.message.chat.id, `Для користування данною функцією, надайте дозвіл на отримання Вашого номера телефону, через кнопку клавіатури [Надіслати номер телефону] і потім повторно запустити з головного меню пункт 10. `, {
                  reply_markup: {
                    keyboard: [
                      [{
@@ -1283,22 +1733,33 @@
                    // Вмикаємо автоматичне зменшення клавіатури
                  }
                });
+
+
+
+
+
+
              } else {
-               bot.onReplyToMessage(chatId, sent.message_id, (reply) => {
-                 namer = reply.text;
-                  if (namer == '/start' || namer == undefined || namer.length ==0){bot.sendMessage(chatId,'Введено некоректний текст');}else{
-                 bot.sendMessage(chatId, `Ваше запитання відправлено оператору. Очікуйте відповідь.`);
+
+              bot.sendMessage(query.message.chat.id, `Вітаю Вас, поставте нам запитання або озвучте проблему з якою Ви зіткнулись в нашій лабораторії. І ми в найкоротший час звяжемося з Вами`, {
+                reply_markup: {
+                  force_reply: true
+                }
+              }).then(sent=>{
+               bot.onReplyToMessage(query.message.chat.id, sent.message_id, (reply) => {
+                                 if (reply.text == '/start' || reply.text == undefined || reply.text.length ==0){bot.sendMessage(query.message.chat.id,'Введено некоректний текст');}else{
+                 bot.sendMessage(query.message.chat.id, `Ваше запитання відправлено оператору. Очікуйте відповідь.`);
                  //  bot.sendMessage(chatId,namer).then((sent)=>{ bot.forwardMessage(-813260675, chatId, sent.message_id); } );
 
-                 bot.sendMessage(-813260675, `Надійшло запитання від користувача Телеграм-бота ${sent.chat.first_name}\n     \nТекст запитання:\n ${namer}\n Номер телефону: ${phone}    \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
+                 bot.sendMessage(-954144335, `Надійшло запитання від користувача Телеграм-бота ${sent.chat.first_name}\n     \nТекст запитання:\n ${reply.text}\n Номер телефону: ${userphones[query.message.chat.id]}    \n<b>Нагадую про необхідність терміново передзвонити кліенту для опрацювання звернення.</b> `, {
                    parse_mode: 'HTML'
-                 });
-               }});
+                 }).then(QuestionPhoneTriger = false);
+               }});});
              }
-           });
+          
 
        } else {
-         bot.sendMessage(chatId, '😪 Ми, наразі зачинені. Звернення обробляються лише в робочий час.');
+         bot.sendMessage(query.message.chat.id, '😪 Ми, наразі зачинені. Звернення обробляються лише в робочий час.');
        }
 
 
