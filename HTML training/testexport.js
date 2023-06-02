@@ -5,6 +5,37 @@ const webappurl = 'https://www.mtsclinic.com/';
 let newTelegram;
 const intervals = {};
 
+Array.prototype.sumArray = function sumArray(array) {
+  let sum = 0;
+  array.forEach((element) => {
+    sum += element;
+  });
+  return sum;
+};
+Date.prototype.DateMod = function(userdate)
+
+{
+  
+ try {
+   const parts = userdate.split('/');
+ this.setFullYear(parts[2]);
+ this.setMonth(parts[1]);
+ this.setDate(parts[0]);
+ const year = this.getFullYear().toString();
+ const month = (this.getMonth()).toString().padStart(2, '0');
+ const day = this.getDate().toString().padStart(2, '0');
+
+ const outputdate = year + '-' + month + '-' + day;
+ return outputdate;}
+ catch(e){
+
+   console.log(e + ' Помилка');
+   return false;
+ }
+};
+
+
+
 module.exports = {
   
     weather: async function(cityname) {
@@ -33,7 +64,7 @@ module.exports = {
     const words = text.split(',');
     return words[0];
   },
-
+  
   randomize:  function randomize() {
   const randomNumber = Math.floor(Math.random() * (9999999 - 1000000 + 1)) + 1000000;
   return `Замовлення № ${randomNumber}`;
@@ -55,16 +86,10 @@ isWorkingTime: function isWorkingTime(start, end) {
 //console.log(typeof(phonenumber));
 return new Promise(async (resolve, reject) => {
 
-  const Schema = mongoose.Schema;
-  mongoose.connect(URI).then((res) => {console.log(res);}
+
    
-  )
-  .catch((error) => console.log(error));
-  const chatidSchema = new Schema ({
-     "ChatId": Number,
-     "FullName" : String,
-     "Phone" : Number,
-    "BirthDay": String});
+
+ 
   
   
   
@@ -75,6 +100,18 @@ return new Promise(async (resolve, reject) => {
 
 
   try {
+    
+  
+
+    await mongoose.connect(URI); // Connect to MongoDB
+
+    const Schema = mongoose.Schema;
+    const chatidSchema = new Schema({
+      ChatId: Number,
+      FullName: String,
+      Phone: Number,
+      BirthDay: String
+    });
     const samples = await Post.find({"Контактні дані:Тел": {
       "1": phonenumber
     }}); // Шукаємо записи в бд по номеру 
@@ -90,6 +127,7 @@ return new Promise(async (resolve, reject) => {
       Telegram.findOne({ "ChatId": chatid}).then(function(telegram) {
         if (telegram) {
           console.log('Документ знайдено:', telegram);
+
         } else {
           console.log('Документ не знайдено chatid baza');
 
@@ -101,7 +139,7 @@ return new Promise(async (resolve, reject) => {
              };
 
           mongoose.connection.collection('telegrams').insertOne(newTelegram).then(console.log('Дані добавлено') );
-          //mongoose.connection.close();
+         // mongoose.connection.close();
           resolve(nameclient);
         }
       }).catch(function(error) {
@@ -109,20 +147,21 @@ return new Promise(async (resolve, reject) => {
       });
     
                 
-      mongoose.connection.deleteModel('mtsbaseckient1');
+      //mongoose.connection.deleteModel('mtsbaseckient1');
       //mongoose.connection.close();
      
     } else {
       console.log('Запис не знайдено в базі даних.Починаю пошук альтернативним шляхом'); 
-      mongoose.connection.deleteModel('mtsbaseckient1');
+     // mongoose.connection.deleteModel('mtsbaseckient1');
       fetch(`http://195.211.240.20:11998/KDG_SIMPLE_LAB_API/MedTech/custom/GetPatientExams?BurnDate=${burndate}&PhoneNumber=${phonenumber}&BegDate=${startdate}&EndDate=${finishdate}`,{
         headers: {
         
         'Authorization': 'Basic TWVkVGVjaHxNZWRUZWNoV2ViOk1lZFRlY2gxMjMh'
         }
         })
-        .then(response => response.json())
-        .then(data => 
+      .catch( err=> { console.log(`Невірний формат дати народження.${err}`);})     
+      .then(response => response.json())
+      .then(data => 
         { if (data.length != 0) { FullNameGet = data[0].FullName;} 
           Telegram.findOne({ "ChatId": chatid}).then(function(telegram) {
             if (telegram) {
@@ -130,7 +169,7 @@ return new Promise(async (resolve, reject) => {
      
             } else {
               console.log('Документ не знайдено по chatid');
-    
+                  
               const newTelegram = {
                        ChatId: chatid,
                        FullName: FullNameGet,
@@ -141,13 +180,17 @@ return new Promise(async (resolve, reject) => {
                        
                if (newTelegram.FullName == undefined || newTelegram.BirthDay == undefined || newTelegram.Phone==undefined){
                 console.log('Запис в базу відмінено. Не всі дані в наявності');
-             // reject('Запис в базу відмінено.');
+              reject('Запис в базу відмінено.');
             }
                else{mongoose.connection.collection('telegrams').insertOne(newTelegram).then(console.log('Дані добавлено'));
-         resolve(FullNameGet);}
+         
+              
+         
+               resolve(FullNameGet);}
          
                 }}
         );});
+  
         
 
      
@@ -178,7 +221,7 @@ return new Promise(async (resolve, reject) => {
     inline_keyboard: [
       [{ text: '1.⏳ Отримати результати аналізів по коду', callback_data: 'button1' }],
       [{ text: '2. 🔍 Запитати отримання всіх результатів за весь час', callback_data: 'button2' }],
-      [{ text: '3. 🕵️‍♂️ Як нас знайти', callback_data: 'button3' }],
+      [{ text: '3. 🕵️‍♂️ Як,нас знайти', callback_data: 'button3' }],
       [{ text: '4. 🏨 Наші філії', callback_data: 'button4' }],
       [{ text: '5. 📋 Актуальний прайс-лист лабораторії MTS Clinic', callback_data: 'button5' }],
       [{ text: '6. 📋 Прайс-листи медичного центру MTS Clinic', callback_data: 'button6' }],
@@ -238,30 +281,26 @@ GetKBMonitor: {reply_markup: {
         if (telegram) {
           console.log('Документ найден:', telegram.FullName);
           resolve(telegram);
-          mongoose.connection.close();
+         // mongoose.connection.close();
           
         } else {
           //console.log('Документ не найден');
-          mongoose.connection.close();
-          reject('Документ не знайдено');
+         // mongoose.connection.close();
+          reject(false);
         }
       });
     });
   });
 },
 
-DateMod: function DateMod(origdate){
-
-  const parts = origdate.split('/');
-  var year = parts[2];
-  var month = parts[1];
-  var day = parts[0];
-  
-  let outputdate = year + '-' + month + '-' + day;
-  return outputdate;
+GetPackCount: function GetPackCount(outputdate,phone,newaca,newac){
 
 
-  
+
+
+
+
+
 },
 GetPackResults:function GetPackResults(outputdate,phone,newaca,newac){ return new Promise((resolve, reject) => {
   fetch(`http://195.211.240.20:11998/KDG_SIMPLE_LAB_API/MedTech/custom/GetPatientExams?BurnDate=${outputdate}&PhoneNumber=${phone}&BegDate=${newaca}&EndDate=${newac}`,{
@@ -298,6 +337,7 @@ GetCurDay: function GetCurDay(){
 
 },
 
+
 GetPeriodBack: function GetPeriodBack(dayback){
 
   let today = new Date();
@@ -318,7 +358,7 @@ GetPeriodBack: function GetPeriodBack(dayback){
 
 
 
-},
+}
 
 
 

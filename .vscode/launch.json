@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
         
         
       
@@ -34,10 +35,21 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "interval test",
+            "name": "Launch Program axi mts",
             "skipFiles": [
                 "<node_internals>/**"
-            ],"program": "${workspaceFolder}\\HTML training\\intervaltest.js",
+            ],"program": "${workspaceFolder}\\aximts.js",
+          
+            
+            
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program testing",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],"program": "${workspaceFolder}\\worktest.js",
           
             
             

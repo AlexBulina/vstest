@@ -17,7 +17,7 @@
    GetCurDay,
    GetPeriodBack
    
- } = require('./HTML training/testexport');
+ } = require('./testexport');
  const {
    Console
  } = require('console');
@@ -219,7 +219,7 @@ let arrayyearcount = [];
      bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${userburns[msg.chat.id]}`, GetKeyboardonlyBurn(userburns[msg.chat.id]));
    } else if (validateDateObj(userburns[msg.chat.id]) && userphones[msg.chat.id]){
      bot.sendMessage(msg.chat.id, `Дякуємо! Ваша дата народження: ${userburns[msg.chat.id]}`, GetKeyboradBurnandPhone(userphones[msg.chat.id], userburns[msg.chat.id]));
-     isdbName(msg.chat.id, Number(userphones[msg.chat.id]), userburns[msg.chat.id], GetPeriodBack(1000), GetCurDay()).catch(()=>{});
+     isdbName(msg.chat.id, Number(userphones[msg.chat.id]), userburns[msg.chat.id], GetPeriodBack(1000), GetCurDay());
 
    } else{ (bot.sendMessage(msg.chat.id,'Відсутня інформація про Вас.'));}
 
@@ -250,51 +250,7 @@ let arrayyearcount = [];
    }
 
  
- if (GetTrigerObject[msg.chat.id].SelectTriger == true && userphones[msg.chat.id] && userburns[msg.chat.id] && GetTrigerObject[msg.chat.id].PhoneTriger == false)
- {
-  GetTrigerObject[msg.chat.id].arrayyearcount = [];
-  processIterations(msg.chat.id,3)
-  .then(() => {
-
-    GetNameDB(msg.chat.id).then(() =>{
-    // isdbName(msg.chat.id,userphones[msg.chat.id],userburns[msg.chat.id],'2010-01-01','2030-31-12').then((response)=>{
-
-      if (userphones[msg.chat.id] && userburns[msg.chat.id] != undefined){    //перевірка на наявність в базі
-      
-      
-        bot.sendMessage(msg.chat.id, `Виберіть період,який Вас цікавить:`, {
-  
-        reply_markup: {
-          inline_keyboard: [
-            [{
-              text: `1. ${curyear-3}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[0]}) `,
-              callback_data: 'button12'
-            }],
-            [{
-              text: `2. ${curyear-2}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[1]})`,
-              callback_data: 'button11'
-            }],
-            [{
-              text: `3. ${curyear-1}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[2]})`,
-              callback_data: 'button9'
-            }],
-            [{
-              text: `4. ${curyear}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[3]}) `,   
-              callback_data: 'button10'
-            }],
-            [{
-              text: `5. Усі роки: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount.sumArray( GetTrigerObject[msg.chat.id].arrayyearcount)}) `,
-              callback_data: 'button13'
-            }]
-  
-          ],remove_keyboard: false
-  
-        }
-  });}}).catch(()=>{bot.sendMessage(msg.chat.id, `Помилка. Відсутня інформація про Вас в базі данних MTS Clinic`);});
-
-
-    });
-
+ if (GetTrigerObject[msg.chat.id].SelectTriger == true && userphones[msg.chat.id] && userburns[msg.chat.id] && GetTrigerObject[msg.chat.id].PhoneTriger == false){bot.sendMessage(msg.chat.id,'Оберіть потрібний період',YearSelect);
   } else {}
  if (GetTrigerObject[msg.chat.id].StartScan == true && validateDateObj(userburns[msg.chat.id])){
   
@@ -335,10 +291,10 @@ let arrayyearcount = [];
 
     if (response.ok) {
       const data = await response.json();
-      
-      return data;
-    } else { return 0;
-      //throw new Error('Request failed');
+      const nameArray = data.length;
+      return nameArray;
+    } else {
+      throw new Error('Request failed');
     }
   } catch (error) {
     throw error;
@@ -495,76 +451,7 @@ let arrayyearcount = [];
 
    }
    if (GetTrigerObject[msg.chat.id].SelectTriger && (userphones[msg.chat.id] != undefined)  && validateDateObj(userburns[msg.chat.id]) && !GetTrigerObject[msg.chat.id].PhoneTriger ){
-    //bot.sendMessage(msg.chat.id,'Оберіть потрібний період',YearSelect);
-    GetTrigerObject[msg.chat.id].arrayyearcount = [];
-    processIterations(msg.chat.id,3)
-  .then(() => {
-
-    GetNameDB(msg.chat.id).then(() =>{
-
-
-        if (userphones[msg.chat.id] && userburns[msg.chat.id] != undefined){
-      
-      
-      bot.sendMessage(msg.chat.id, `Виберіть період,який Вас цікавить:`, {
-
-      reply_markup: {
-        inline_keyboard: [
-          [{
-            text: `1. ${curyear-3}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[0]}) `,
-            callback_data: 'button12'
-          }],
-          [{
-            text: `2. ${curyear-2}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[1]})`,
-            callback_data: 'button11'
-          }],
-          [{
-            text: `3. ${curyear-1}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[2]})`,
-            callback_data: 'button9'
-          }],
-          [{
-            text: `4. ${curyear}: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount[3]}) `,   
-            callback_data: 'button10'
-          }],
-          [{
-            text: `5. Усі роки: Аналізів (${ GetTrigerObject[msg.chat.id].arrayyearcount.sumArray( GetTrigerObject[msg.chat.id].arrayyearcount)}) `,
-            callback_data: 'button13'
-          }]
-
-        ],remove_keyboard: false
-
-      }
-});
-bot.sendMessage(msg.chat.id,'В разі потреби скорегуйте свою дату народження та номер телефону через кнопки клавіатури , що внизу.Також, якщо Ви реєстрували дослідження своєї дитини на свій номер, то введіть дату народження Вашої дитини чи окремих дітей і отримайте їхні результати досліджень.',GetKeyboradBurnandPhone(userphones[msg.chat.id],userburns[msg.chat.id] )
-// 
-
-
-
-).then(GetTrigerObject[msg.chat.id].PhoneTriger =false);
-} else {
-   
-   bot.sendMessage(msg.chat.id, 'Введіть свою дату народження в форматі ДД/ММ/РРРР - для унікальної ідентифікації вас в базі данних лабораторії MTS Clinic', {
-     reply_markup: {
-       remove_keyboard: true
-     }
-   });
-
-}
-
-    }).catch(err =>{console.log(err +'Відстуній запис паціента в постійних кліентах телеграма' );});
-  
-  
-  });
-
-
-
-
-
-
-
-
-
-  }
+    bot.sendMessage(msg.chat.id,'Оберіть потрібний період',YearSelect);}
 
 
 
@@ -803,7 +690,6 @@ const YearSelect = {   reply_markup: {
 
 
  async function getW(chatid, city) {
-  return new Promise((resolve,reject)=>{
    weather(city)
      .then(data => {
        const getweasher = {
@@ -814,12 +700,13 @@ const YearSelect = {   reply_markup: {
        };
        return getweasher;
      })
-     .catch(error => {console.error(error);})
+     .catch(error => {
+       console.error(error);
+
+     })
      .then(getweasher => fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${getweasher.latitude}&lon=${getweasher.longitude}&appid=${getweasher.appid}&units=metric&lang=ua`)
-       
-     .then(response => response.json())
-       
-     .then(data => {
+       .then(response => response.json())
+       .then(data => {
            const now = new Date();
            const starttime = new Date();
            const hours = now.getHours();
@@ -876,12 +763,12 @@ const YearSelect = {   reply_markup: {
 
 
 
-      resolve();   }
+         }
 
 
        ).catch(err => {console.log('Помилка в функції виклику данних погоди. Рядок 692' + err);})
        );
-   });  }
+ }
 
 
 
@@ -929,21 +816,7 @@ const YearSelect = {   reply_markup: {
 
 
 
- function processIterations(Tid,i) {
 
-  if (i >= 0) {
-    
-    return requestdataCount(Tid, curyear - i, curyear - i, userphones[Tid], userburns[Tid])
-      .then(res => {
-        
-        GetTrigerObject[Tid].arrayyearcount.push(res.length);
-         // Добавляем текущее значение res в массив
-        return processIterations(Tid,i - 1); // Рекурсивно вызываем следующую итерацию с уменьшенным i
-      });
-  } else {
-    return Promise.resolve(); // Возвращаем успешно разрешенный промис при завершении всех итераций
-  }
-}
 
 
 
@@ -980,7 +853,7 @@ const YearSelect = {   reply_markup: {
    if (msg.text === '/start') {
 
      bot.sendSticker(msg.chat.id, 'CAACAgIAAxkBAAEIyH5kTfKJfjKEmYHi8CKOq2f7YZupTwACGCUAAn2PcUrNxIKmFCxpby8E')
-       .then(()=>{
+       .then(
        
          GetNameDB(msg.chat.id).then(telegram => {
           userburns[msg.chat.id]=telegram._doc.BirthDay;
@@ -992,19 +865,16 @@ const YearSelect = {   reply_markup: {
               remove_keyboard: true
             }
           })
-             .then(()=>{getW(msg.from.id, 'Пісочин').then(()=>{SelectTriger = false;
-              bot.sendMessage(msg.chat.id, 'Виберіть дію: 👇', InlineKB);});
+             .then(getW(msg.from.id, 'Пісочин'),
 
-              //  setTimeout(() => {
-              //   SelectTriger = false;
+               setTimeout(() => {
+                SelectTriger = false;
 
-              //    bot.sendMessage(msg.chat.id, 'Виберіть дію: 👇', InlineKB);
-
+                 bot.sendMessage(msg.chat.id, 'Виберіть дію: 👇', InlineKB);
 
 
-              //  }, 500);
-              
-              }
+
+               }, 500)
 
 
 
@@ -1034,7 +904,7 @@ const YearSelect = {   reply_markup: {
 
 
 
-         });}
+         })
 
        );
 
@@ -1091,6 +961,7 @@ const YearSelect = {   reply_markup: {
 
 
 
+
  bot.on('callback_query', (query) => {
    const chatId = query.message.chat.id;
    const data = query.data;
@@ -1122,24 +993,23 @@ const YearSelect = {   reply_markup: {
 
 
 
-// function processIterations(Tid,i) {
-//   if (i >= 0) {
-//     return requestdataCount(Tid, curyear - i, curyear - i, userphones[Tid], userburns[Tid])
-//       .then(res => {
+function processIterations(i) {
+  if (i >= 0) {
+    return requestdataCount(query.message.chat.id, curyear - i, curyear - i, userphones[query.message.chat.id], userburns[query.message.chat.id])
+      .then(res => {
 
-//         GetTrigerObject[Tid].arrayyearcount.push(res);
-//          // Добавляем текущее значение res в массив
-//         return processIterations(query.message.chat.id,i - 1); // Рекурсивно вызываем следующую итерацию с уменьшенным i
-//       });
-//   } else {
-//     return Promise.resolve(); // Возвращаем успешно разрешенный промис при завершении всех итераций
-//   }
-// }
+        GetTrigerObject[query.message.chat.id].arrayyearcount.push(res);
+         // Добавляем текущее значение res в массив
+        return processIterations(i - 1); // Рекурсивно вызываем следующую итерацию с уменьшенным i
+      });
+  } else {
+    return Promise.resolve(); // Возвращаем успешно разрешенный промис при завершении всех итераций
+  }
+}
 
 // Используем рекурсивную функцию для выполнения итераций
-processIterations(query.message.chat.id,3)
+processIterations(3)
   .then(() => {
-    
     if (userphones[query.message.chat.id] && userburns[query.message.chat.id] != undefined){
       
       
@@ -1195,7 +1065,7 @@ bot.sendMessage(query.message.chat.id,'В разі потреби скорегу
       requestdataCount(query.message.chat.id, curyear, curyear, userphones[query.message.chat.id], userburns[query.message.chat.id])
   .then(res => {
  
-    return Promise.resolve(res.length); // Вернуть промис для обеспечения порядка выполнения
+    return Promise.resolve(res); // Вернуть промис для обеспечения порядка выполнения
   })
   .catch(err => {console.log('Виникла помилка при зверненні на підрахунок кількості аналізів'+ err);});
  

@@ -221,7 +221,7 @@ analyze.forEach(function(item1) {
 
  
 
-if ((item2.id == item1.groupId && item1.prices.main != null) && (item2.active) && (item1.active ))
+if ((item2.id == item1.groupId && item1.prices.main != null && item1.prices.main != 0 && item1.prices.main != 1) && (item2.active) && (item1.active ))
  {
 
 //console.log(item1.name + '   ' + item2.name);  
@@ -344,7 +344,7 @@ fetch(Packagelist,{
       if (item3.active){
         name2.forEach(function(packgroup){
 
-           if(item3.groupId == packgroup.id && item3.prices.main != null) {
+           if(item3.groupId == packgroup.id && item3.prices.main != null && item3.prices.main != 0) {
 
             addDataToWorksheet(i,item3.prices.main + ' грн',item3.name,'код '+item3.code,item3.term,packgroup.name,2);
             i++; //!!!!!!!!!!!!!!!!!!
