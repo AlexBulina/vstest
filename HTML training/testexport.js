@@ -34,7 +34,16 @@ Date.prototype.DateMod = function(userdate)
  }
 };
 
-
+function convertDatePoint(dateString) {
+  const parts = dateString.split('-'); // Split the date string into parts
+  const year = parts[0];
+  const month = parts[1];
+  const day = parts[2];
+  
+  const convertedDate = `${day}.${month}.${year}`;
+  
+  return convertedDate;
+}
 
 module.exports = {
   
@@ -114,7 +123,7 @@ return new Promise(async (resolve, reject) => {
     });
     const samples = await Post.find({"Контактні дані:Тел": {
       "1": phonenumber
-    }}); // Шукаємо записи в бд по номеру 
+    },"Дата народження": convertDatePoint(burndate)}); // Шукаємо записи в бд по номеру 
   
  
 
