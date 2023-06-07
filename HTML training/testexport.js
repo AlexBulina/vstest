@@ -134,10 +134,7 @@ return new Promise(async (resolve, reject) => {
 
 
       Telegram.findOne({ "ChatId": chatid}).then(function(telegram) {
-        if (telegram) {
-          console.log('Документ знайдено:', telegram);
-
-        } else {
+      
           console.log('Документ не знайдено chatid baza');
 
           const newTelegram = {
@@ -147,10 +144,18 @@ return new Promise(async (resolve, reject) => {
                    BirthDay : burndate
              };
 
-          mongoose.connection.collection('telegrams').insertOne(newTelegram).then(console.log('Дані добавлено') );
+             mongoose.connection.collection('telegrams').updateOne({ChatId: chatid},{$set: {FullName: nameclient, BirthDay: burndate} })
+             .then((res)=>{
+
+               if (res.modifiedCount == 0) { mongoose.connection.collection('telegrams').insertOne(newTelegram).then(console.log('Дані добавлено') );}
+
+             })
+             .catch((err)=>{
+              console.log(err + 'Помилка Оновлення документу в БД');
+             });
          // mongoose.connection.close();
           resolve(nameclient);
-        }
+        
       }).catch(function(error) {
         console.error('Ошибка при поиске документа:', error);
       });
@@ -178,7 +183,10 @@ return new Promise(async (resolve, reject) => {
      
             } else {
               console.log('Документ не знайдено по chatid');
-                  
+              const updatedb = {
+                IsUpdateted: false,
+                FullDBName: FullNameGet
+              };    
               const newTelegram = {
                        ChatId: chatid,
                        FullName: FullNameGet,
@@ -191,8 +199,18 @@ return new Promise(async (resolve, reject) => {
                 console.log('Запис в базу відмінено. Не всі дані в наявності');
               reject('Запис в базу відмінено.');
             }
-               else{mongoose.connection.collection('telegrams').insertOne(newTelegram).then(console.log('Дані добавлено'));
-         
+               else{
+
+                mongoose.connection.collection('telegrams').updateOne({ChatId: chatid},{$set: {FullName: FullNameGet, BirthDay: burndate} })
+                .then((res)=>{
+   
+                  if (res.modifiedCount == 0) { mongoose.connection.collection('telegrams').insertOne(newTelegram).then(console.log('Дані добавлено') );}
+   
+                })
+                .catch((err)=>{
+                 console.log(err + 'Помилка Оновлення документу в БД');
+                });
+
               
          
                resolve(FullNameGet);}
@@ -221,7 +239,7 @@ return new Promise(async (resolve, reject) => {
 
  url : 'http://195.211.240.20:11998/KDG_SIMPLE_LAB_API/MedTech',
  
- token : '510200054:AAEEZ21fwwx8GPA06ATSw5fzzddqT1rYdiA',   //<-test token  //5949157258:AAENmhmwtyhoYjieQCWcZIAP3WYY6cn4_b4  MTS
+ token : '510200054:AAEEZ21fwwx8GPA06ATSw5fzzddqT1rYdiA',   //<-test token  //5949157258:AAENmhmwtyhoYjieQCWcZIAP3WYY6cn4_b4  MTS // 510200054:AAEEZ21fwwx8GPA06ATSw5fzzddqT1rYdiA
  basicauth: 'Basic TWVkVGVjaHxNZWRUZWNoV2ViOk1lZFRlY2gxMjMh',
  savepath: './testexport.js',
  InlineKB: {
@@ -230,7 +248,7 @@ return new Promise(async (resolve, reject) => {
     inline_keyboard: [
       [{ text: '1.⏳ Отримати результати аналізів по коду', callback_data: 'button1' }],
       [{ text: '2. 🔍 Запитати отримання всіх результатів за весь час', callback_data: 'button2' }],
-      [{ text: '3. 🕵️‍♂️ Як,нас знайти', callback_data: 'button3' }],
+      [{ text: '3. 🕵️‍♂️ Як нас знайти', callback_data: 'button3' }],
       [{ text: '4. 🏨 Наші філії', callback_data: 'button4' }],
       [{ text: '5. 📋 Актуальний прайс-лист лабораторії MTS Clinic', callback_data: 'button5' }],
       [{ text: '6. 📋 Прайс-листи медичного центру MTS Clinic', callback_data: 'button6' }],
@@ -332,6 +350,25 @@ GetPackResults:function GetPackResults(outputdate,phone,newaca,newac){ return ne
   
 
 },
+RemoveDocDB: function RemoveDocDB(userId) {
+  return new Promise((resolve, reject) => {
+    Telegram.deleteOne({ ChatId: userId })
+      .exec()
+      .then(() => {
+        console.log('Документ успешно удален');
+        resolve();
+      })
+      .catch(error => {
+        console.log('Произошла ошибка при удалении документа:', error);
+        reject(error);
+      });
+  });
+},
+
+
+
+
+
 GetCurDay: function GetCurDay(){
 
 
@@ -387,7 +424,8 @@ GetPeriodBack: function GetPeriodBack(dayback){
   const Schema = mongoose.Schema;
   const chatidSchema = new Schema ({
     "ChatId": Number,
-    "FullName" : String
+    "FullName" : String,
+    
   });
   const sampleSchema = new Schema({
     "Повна назва": String,
